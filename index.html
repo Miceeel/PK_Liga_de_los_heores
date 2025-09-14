@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Pokémon — La Liga de los Héroes</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root{
+  --bg-dark:#0f1720;
+  --bg-side:#162029;
+  --panel:#1f2b33;
+  --accent:#ffde00;
+  --primary:#3b4cca;
+  --danger:#c0392b;
+  --txt:#e6eef6;
+  --muted:#98a6b3;
+  --hero-grad: linear-gradient(90deg,#ffd700,#ff7a18);
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:Inter, "Segoe UI", Roboto, Arial, sans-serif}
+body{background:var(--bg-dark);color:var(--txt);height:100vh;display:flex;overflow:hidden;}
+.sidebar{
+  width:260px;position:fixed;left:0;top:0;bottom:0;background:var(--bg-side);padding:22px 18px;box-shadow:2px 0 8px rgba(0,0,0,.6);z-index:1200;
+}
+.logo{color:var(--accent);text-align:center;margin-bottom:18px;font-weight:800;font-size:20px;line-height:1.05}
+.nav-menu{margin-top:10px}
+.nav-menu a{display:flex;align-items:center;gap:12px;padding:10px 12px;color:var(--txt);text-decoration:none;border-radius:8px;margin-bottom:8px;cursor:pointer}
+.nav-menu a:hover, .nav-menu a.active{background:var(--primary);color:white}
+.nav-menu i{width:22px;text-align:center}
+#topBar{
+  position:fixed;left:260px;right:0;top:0;height:72px;background:var(--panel);display:flex;align-items:center;gap:14px;padding:10px 20px;border-bottom:1px solid rgba(255,255,255,0.03);z-index:1300;
+}
+#loginForm{display:flex;gap:10px;align-items:center;flex:1}
+#loginForm input{padding:9px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--txt)}
+#loginForm button{padding:9px 12px;border-radius:6px;border:none;background:var(--primary);color:#fff;cursor:pointer}
+#coinDisplay{font-weight:700;color:var(--accent);min-width:160px;text-align:right}
+#logoutBtn{background:var(--danger);color:#fff;padding:7px 10px;border-radius:6px;border:none;cursor:pointer}
+#adminOpenBtn{padding:7px 12px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;margin-left:5px}
+#adminPanel{position:fixed;top:86px;right:20px;width:320px;background:var(--panel);padding:14px;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.6);display:none;z-index:1400}
+#adminPanel h3{color:var(--accent);margin-bottom:10px}
+.main{margin-left:260px;margin-top:72px;right:0;bottom:0;position:relative;overflow:auto;padding:22px;}
+.hero{
+  padding:28px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));margin-bottom:18px;border:1px solid rgba(255,255,255,0.03);
+  display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;
+}
+.hero h1{
+  font-size:64px;letter-spacing:8px;margin:0;
+  background:var(--hero-grad);-webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow: 0 6px 20px rgba(0,0,0,.6);
+}
+.hero .subtitle{color:var(--accent);font-size:20px;font-weight:600;opacity:0.95}
+.hero .welcome{color:var(--txt);font-size:16px;margin-top:6px}
+.page{margin-top:12px}
+.page.active{display:block}
+.page:not(.active){display:none}
+.card{background:var(--panel);padding:16px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 6px 18px rgba(0,0,0,.5)}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:12px}
+input,select,textarea{width:100%;padding:9px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--txt)}
+.btn{padding:9px 12px;border-radius:8px;border:none;cursor:pointer;font-weight:700}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-danger{background:var(--danger);color:#fff}
+.poke-item{display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.02);cursor:pointer}
+.poke-item:hover{background:rgba(255,255,255,0.03)}
+.poke-item.selected{background:var(--accent);color:#111;font-weight:700}
+.poke-item img{width:32px;height:32px;margin-right:12px;image-rendering:pixelated}
+
+/* NUEVA POKÉDEX */
+#page-pokedex {
+  padding: 20px;
+}
+.pokedex-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+.pokedex-card {
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  border: 1px solid rgba(255,255,255,0.03);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.pokedex-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+}
+.pokedex-card img {
+  width: 128px;
+  height: 128px;
+  object-fit: contain;
+  margin-bottom: 8px;
+  image-rendering: pixelated;
+  background-color: #111;
+  border-radius: 8px;
+  padding: 4px;
+}
+.pokedex-card .name {
+  font-weight: bold;
+  color: var(--txt);
+  font-size: 14px;
+  line-height: 1.3;
+  word-wrap: break-word;
+}
+.pokedex-card .id {
+  color: var(--accent);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+#pokedexSearch {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.04);
+  background: transparent;
+  color: var(--txt);
+  margin-bottom: 20px;
+}
+
+/* NUEVA MEGA EVOLUCIONES */
+#page-mega {
+  padding: 20px;
+}
+.mega-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+.mega-card {
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  border: 1px solid rgba(255,255,255,0.03);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.mega-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+}
+.mega-card img {
+  width: 128px;
+  height: 128px;
+  object-fit: contain;
+  margin-bottom: 8px;
+  image-rendering: pixelated;
+  background-color: #111;
+  border-radius: 8px;
+  padding: 4px;
+}
+.mega-card .name {
+  font-weight: bold;
+  color: var(--txt);
+  font-size: 14px;
+  line-height: 1.3;
+  word-wrap: break-word;
+  color: #ffde00;
+}
+.mega-card .base {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 4px;
+}
+#megaSearch {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.04);
+  background: transparent;
+  color: var(--txt);
+  margin-bottom: 20px;
+}
+
+@media (max-width:900px){
+  .sidebar{display:none}
+  #topBar{left:0}
+  .main{margin-left:0}
+  .pokedex-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .pokedex-card img { width: 100px; height: 100px; }
+  .pokedex-card .name { font-size: 12px; }
+  .mega-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .mega-card img { width: 100px; height: 100px; }
+  .mega-card .name { font-size: 12px; }
+  .mega-card .base { font-size: 11px; }
+}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="logo">POKÉMON <small style="display:block;font-size:12px;color:var(--muted);font-weight:600">La Liga de los Héroes</small></div>
+  <nav class="nav-menu">
+    <a data-page="team" class="active"><i class="fas fa-list"></i> Mi Equipo</a>
+    <a data-page="addpoke"><i class="fas fa-dragon"></i> Elegir Pokémon</a>
+    <a data-page="shop"><i class="fas fa-store"></i> Tienda Comodines</a>
+    <a data-page="ranking"><i class="fas fa-trophy"></i> Ranking</a>
+    <a data-page="gym"><i class="fas fa-hiking"></i> Gym Medallas</a>
+    <a data-page="pokedex"><i class="fas fa-book-open"></i> Pokédex</a>
+    <a data-page="mega"><i class="fas fa-fire"></i> Megaevoluciones</a> <!-- NUEVA PESTAÑA -->
+  </nav>
+</div>
+<div id="topBar">
+  <div id="loginForm">
+    <input id="playerNameInput" placeholder="Nombre (nuevo o existente)" list="playerDatalist">
+    <datalist id="playerDatalist"></datalist>
+    <button id="loginBtn" class="btn btn-primary">Entrar / Registrarse</button>
+  </div>
+  <div id="coinDisplay">0 Pokécoins</div>
+  <button id="logoutBtn" style="display:none" class="btn btn-danger">Salir</button>
+  <button id="adminOpenBtn" class="btn btn-primary">Admin</button>
+</div>
+<div id="adminPanel">
+  <h3>Panel Admin</h3>
+  <div class="form-grid">
+    <select id="adminPlayerSelect"><option value="">-- Jugador --</option></select>
+    <input id="adminCoins" type="number" placeholder="Monedas (+/-)">
+    <select id="adminItem">
+      <option value="">-- Ítem Especial --</option>
+      <option>Master Ball</option><option>Rare Candy</option><option>Revivir Pokémon</option><option>Tótem Inmortalidad</option>
+      <option>Robo de Monedas</option><option>Matar Pokémon Enemigo</option>
+    </select>
+    <input id="adminItemQty" type="number" min="1" value="1">
+    <input id="adminMedal" placeholder="Nombre de Medalla (general)">
+    <input id="adminGymMedal" placeholder="Nombre de Medalla de Gym">
+    <select id="adminGymRegion">
+      <option value="">-- Región --</option>
+      <option>Kanto</option><option>Johto</option><option>Hoenn</option><option>Sinnoh</option>
+      <option>Unova</option><option>Kalos</option><option>Alola</option><option>Galar</option><option>Paldea</option>
+    </select>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:10px">
+    <button id="adminGiveCoinsBtn" class="btn btn-primary">Dar/Quitar Monedas</button>
+    <button id="adminGiveItemBtn" class="btn btn-primary">Dar Ítem</button>
+    <button id="adminGiveMedalBtn" class="btn btn-primary">Dar Medalla</button>
+    <button id="adminGiveGymMedalBtn" class="btn btn-primary">Dar Medalla de Gym</button>
+    <button id="adminCloseBtn" class="btn btn-danger">Cerrar</button>
+    <button id="adminDeletePlayerBtn" class="btn btn-danger" style="margin-left: auto;">Eliminar Jugador</button> <!-- NUEVO BOTÓN -->
+  </div>
+</div>
+<div class="main">
+  <div class="hero">
+    <h1>POKÉMON</h1>
+    <div class="subtitle">LA LIGA DE LOS HÉROES</div>
+    <div id="welcomeMsg" class="welcome">Bienvenido a la Liga — inicia sesión para gestionar tu equipo</div>
+  </div>
+  <div id="page-team" class="page active card">
+    <h2>Mi Equipo</h2>
+    <div id="myTeamContainer">Inicia sesión para ver tu equipo.</div>
+  </div>
+  <div id="page-addpoke" class="page card" style="display:none">
+    <h2>Elegir Pokémon</h2>
+    <div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <input id="pokeSearchInput" placeholder="Filtrar por nombre..." style="flex:1">
+        <button id="addPokeBtn" class="btn btn-primary">Añadir Seleccionado</button>
+      </div>
+      <div id="pokeList" style="margin-top:10px"></div>
+      <small style="display:block;margin-top:8px;color:var(--muted)">Máximo 6 Pokémon por equipo. Haz clic en un Pokémon para seleccionarlo (resaltado), luego pulsa "Añadir Seleccionado".</small>
+    </div>
+  </div>
+  <div id="page-shop" class="page card" style="display:none">
+    <h2>Tienda de Comodines</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+      <div class="card" style="text-align:center">
+        <i class="fas fa-heart-pulse" style="font-size:28px;color:#e74c3c"></i>
+        <div style="margin:8px 0"><strong>Revivir Pokémon</strong></div>
+        <div>1000 Pokécoins</div>
+        <button class="btn btn-primary" data-item-name="Revivir Pokémon" data-price="1000" style="margin-top:8px">Comprar</button>
+      </div>
+      <div class="card" style="text-align:center">
+        <i class="fas fa-hand-holding-dollar" style="font-size:28px;color:#f1c40f"></i>
+        <div style="margin:8px 0"><strong>Robo de Monedas</strong></div>
+        <div>5000 Pokécoins</div>
+        <button class="btn btn-primary" data-item-name="Robo de Monedas" data-price="5000" style="margin-top:8px">Comprar</button>
+      </div>
+      <div class="card" style="text-align:center">
+        <i class="fas fa-shield-virus" style="font-size:28px;color:#9b59b6"></i>
+        <div style="margin:8px 0"><strong>Tótem Inmortalidad</strong></div>
+        <div>10000 Pokécoins</div>
+        <button class="btn btn-primary" data-item-name="Tótem Inmortalidad" data-price="10000" style="margin-top:8px">Comprar</button>
+      </div>
+      <div class="card" style="text-align:center">
+        <i class="fas fa-skull-crossbones" style="font-size:28px;color:#c0392b"></i>
+        <div style="margin:8px 0"><strong>Matar Pokémon Enemigo</strong></div>
+        <div>20000 Pokécoins</div>
+        <button class="btn btn-danger" data-item-name="Matar Pokémon Enemigo" data-price="20000" style="margin-top:8px">Comprar</button>
+      </div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h3>Tus comodines</h3>
+      <div id="myItemsContainer">Inicia sesión para ver tus ítems</div>
+    </div>
+  </div>
+  <div id="page-ranking" class="page card" style="display:none">
+    <h2>Ranking por Pokécoins</h2>
+    <table>
+      <thead><tr><th>#</th><th>Nombre</th><th>Pokécoins</th><th>Equipo</th><th>Ver Equipo</th></tr></thead>
+      <tbody id="rankBody"></tbody>
+    </table>
+    <div id="otherPlayerDetail" class="card" style="margin-top:20px;display:none;">
+        <h3>Equipo de <span id="otherPlayerName"></span></h3>
+        <ul id="otherPlayerTeamList"></ul>
+        <button id="closeOtherPlayerDetail" class="btn btn-danger" style="margin-top:10px">Cerrar</button>
+    </div>
+  </div>
+  <div id="page-gym" class="page card" style="display:none">
+    <h2>Medallas de Gym</h2>
+    <p>Desafía a los líderes de gimnasio para ganar medallas. Cada medalla cuesta 500 Pokécoins.</p>
+    <div id="gymContainer"></div>
+  </div>
+
+  <!-- NUEVA PESTAÑA: POKÉDEX -->
+  <div id="page-pokedex" class="page card" style="display:none">
+    <h2>Pokédex Completa</h2>
+    <p>Explora todos los Pokémon desde la Generación 1 hasta la 9.</p>
+    <input type="text" id="pokedexSearch" placeholder="Buscar Pokémon por nombre...">
+    <div class="pokedex-grid" id="pokedexGrid"></div>
+  </div>
+
+  <!-- NUEVA PESTAÑA: MEGA EVOLUCIONES -->
+  <div id="page-mega" class="page card" style="display:none">
+    <h2>Megaevoluciones</h2>
+    <p>Descubre todas las Megaevoluciones de Pokémon desde la Generación VI.</p>
+    <input type="text" id="megaSearch" placeholder="Buscar Megaevolución...">
+    <div class="mega-grid" id="megaGrid"></div>
+  </div>
+
+</div>
+<script>
+const rawPokemonList = "Bulbasaur, Ivysaur, Venusaur, Charmander, Charmeleon, Charizard, Squirtle, Wartortle, Blastoise, Caterpie, Metapod, Butterfree, Weedle, Kakuna, Beedrill, Pidgey, Pidgeotto, Pidgeot, Rattata, Raticate, Spearow, Fearow, Ekans, Arbok, Pikachu, Raichu, Sandshrew, Sandslash, Nidoran♀, Nidorina, Nidoqueen, Nidoran♂, Nidorino, Nidoking, Clefairy, Clefable, Vulpix, Ninetales, Jigglypuff, Wigglytuff, Zubat, Golbat, Oddish, Gloom, Vileplume, Paras, Parasect, Venonat, Venomoth, Diglett, Dugtrio, Meowth, Persian, Psyduck, Golduck, Mankey, Primeape, Growlithe, Arcanine, Poliwag, Poliwhirl, Poliwrath, Abra, Kadabra, Alakazam, Machop, Machoke, Machamp, Bellsprout, Weepinbell, Victreebel, Tentacool, Tentacruel, Geodude, Graveler, Golem, Ponyta, Rapidash, Slowpoke, Slowbro, Magnemite, Magneton, Farfetch’d, Doduo, Dodrio, Seel, Dewgong, Grimer, Muk, Shellder, Cloyster, Gastly, Haunter, Gengar, Onix, Drowzee, Hypno, Krabby, Kingler, Voltorb, Electrode, Exeggcute, Exeggutor, Cubone, Marowak, Hitmonlee, Hitmonchan, Lickitung, Koffing, Weezing, Rhyhorn, Rhydon, Chansey, Tangela, Kangaskhan, Horsea, Seadra, Goldeen, Seaking, Staryu, Starmie, Mr. Mime, Scyther, Jynx, Electabuzz, Magmar, Pinsir, Tauros, Magikarp, Gyarados, Lapras, Ditto, Eevee, Vaporeon, Jolteon, Flareon, Porygon, Omanyte, Omastar, Kabuto, Kabutops, Aerodactyl, Snorlax, Articuno, Zapdos, Moltres, Dratini, Dragonair, Dragonite, Mewtwo, Mew, Chikorita, Bayleef, Meganium, Cyndaquil, Quilava, Typhlosion, Totodile, Croconaw, Feraligatr, Sentret, Furret, Hoothoot, Noctowl, Ledyba, Ledian, Spinarak, Ariados, Crobat, Chinchou, Lanturn, Pichu, Cleffa, Igglybuff, Togepi, Togetic, Natu, Xatu, Mareep, Flaaffy, Ampharos, Bellossom, Marill, Azumarill, Sudowoodo, Politoed, Hoppip, Skiploom, Jumpluff, Aipom, Sunkern, Sunflora, Yanma, Wooper, Quagsire, Espeon, Umbreon, Murkrow, Slowking, Misdreavus, Unown, Wobbuffet, Girafarig, Pineco, Forretress, Dunsparce, Gligar, Steelix, Snubbull, Granbull, Qwilfish, Scizor, Shuckle, Heracross, Sneasel, Teddiursa, Ursaring, Slugma, Magcargo, Swinub, Piloswine, Corsola, Remoraid, Octillery, Delibird, Mantine, Skarmory, Houndour, Houndoom, Kingdra, Phanpy, Donphan, Porygon2, Stantler, Smeargle, Tyrogue, Hitmontop, Smoochum, Elekid, Magby, Miltank, Blissey, Raikou, Entei, Suicune, Larvitar, Pupitar, Tyranitar, Lugia, Ho-oh, Celebi, Treecko, Grovyle, Sceptile, Torchic, Combusken, Blaziken, Mudkip, Marshtomp, Swampert, Poochyena, Mightyena, Zigzagoon, Linoone, Wurmple, Silcoon, Beautifly, Cascoon, Dustox, Lotad, Lombre, Ludicolo, Seedot, Nuzleaf, Shiftry, Taillow, Swellow, Wingull, Pelipper, Ralts, Kirlia, Gardevoir, Surskit, Masquerain, Shroomish, Breloom, Slakoth, Vigoroth, Slaking, Nincada, Ninjask, Shedinja, Whismur, Loudred, Exploud, Makuhita, Hariyama, Azurill, Nosepass, Skitty, Delcatty, Sableye, Mawile, Aron, Lairon, Aggron, Meditite, Medicham, Electrike, Manectric, Plusle, Minun, Volbeat, Illumise, Roselia, Gulpin, Swalot, Carvanha, Sharpedo, Wailmer, Wailord, Numel, Camerupt, Torkoal, Spoink, Grumpig, Spinda, Trapinch, Vibrava, Flygon, Cacnea, Cacturne, Swablu, Altaria, Zangoose, Seviper, Lunatone, Solrock, Barboach, Whiscash, Corphish, Crawdaunt, Baltoy, Claydol, Lileep, Cradily, Anorith, Armaldo, Feebas, Milotic, Castform, Kecleon, Shuppet, Banette, Duskull, Dusclops, Tropius, Chimecho, Absol, Wynaut, Snorunt, Glalie, Spheal, Sealeo, Walrein, Clamperl, Huntail, Gorebyss, Relicanth, Luvdisc, Bagon, Shelgon, Salamence, Beldum, Metang, Metagross, Regirock, Regice, Registeel, Latias, Latios, Kyogre, Groudon, Rayquaza, Jirachi, Deoxys, Turtwig, Grotle, Torterra, Chimchar, Monferno, Infernape, Piplup, Prinplup, Empoleon, Starly, Staravia, Staraptor, Bidoof, Bibarel, Kricketot, Kricketune, Shinx, Luxio, Luxray, Budew, Roserade, Cranidos, Rampardos, Shieldon, Bastiodon, Burmy, Wormadam, Mothim, Combee, Vespiquen, Pachirisu, Buizel, Floatzel, Cherubi, Cherrim, Shellos, Gastrodon, Ambipom, Drifloon, Drifblim, Buneary, Lopunny, Mismagius, Honchkrow, Glameow, Purugly, Chingling, Stunky, Skuntank, Bronzor, Bronzong, Bonsly, Mime Jr., Happiny, Chatot, Spiritomb, Gible, Gabite, Garchomp, Munchlax, Riolu, Lucario, Hippopotas, Hippowdon, Skorupi, Drapion, Croagunk, Toxicroak, Carnivine, Finneon, Lumineon, Mantyke, Snover, Abomasnow, Weavile, Magnezone, Lickilicky, Rhyperior, Tangrowth, Electivire, Magmortar, Togekiss, Yanmega, Leafeon, Glaceon, Gliscor, Mamoswine, Porygon-Z, Gallade, Probopass, Dusknoir, Froslass, Rotom, Uxie, Mesprit, Azelf, Dialga, Palkia, Heatran, Regigigas, Giratina, Cresselia, Phione, Manaphy, Darkrai, Shaymin, Arceus, Victini, Snivy, Servine, Serperior, Tepig, Pignite, Emboar, Oshawott, Dewott, Samurott, Patrat, Watchog, Lillipup, Herdier, Stoutland, Purrloin, Liepard, Pansage, Simisage, Pansear, Simisear, Panpour, Simipour, Munna, Musharna, Pidove, Tranquill, Unfezant, Blitzle, Zebstrika, Roggenrola, Boldore, Gigalith, Woobat, Swoobat, Drilbur, Excadrill, Audino, Timburr, Gurdurr, Conkeldurr, Tympole, Palpitoad, Seismitoad, Throh, Sawk, Sewaddle, Swadloon, Leavanny, Venipede, Whirlipede, Scolipede, Cottonee, Whimsicott, Petilil, Lilligant, Basculin, Sandile, Krokorok, Krookodile, Darumaka, Darmanitan, Maractus, Dwebble, Crustle, Scraggy, Scrafty, Sigilyph, Yamask, Cofagrigus, Tirtouga, Carracosta, Archen, Archeops, Trubbish, Garbodor, Zorua, Zoroark, Minccino, Cinccino, Gothita, Gothorita, Gothitelle, Solosis, Duosion, Reuniclus, Ducklett, Swanna, Vanillite, Vanillish, Vanilluxe, Deerling, Sawsbuck, Emolga, Karrablast, Escavalier, Foongus, Amoonguss, Frillish, Jellicent, Alomomola, Joltik, Galvantula, Ferroseed, Ferrothorn, Klink, Klang, Klinklang, Tynamo, Eelektrik, Eelektross, Elgyem, Beheeyem, Litwick, Lampent, Chandelure, Axew, Fraxure, Haxorus, Cubchoo, Beartic, Cryogonal, Shelmet, Accelgor, Stunfisk, Mienfoo, Mienshao, Druddigon, Golett, Golurk, Pawniard, Bisharp, Bouffalant, Rufflet, Braviary, Vullaby, Mandibuzz, Heatmor, Durant, Deino, Zweilous, Hydreigon, Larvesta, Volcarona, Cobalion, Terrakion, Virizion, Tornadus, Thundurus, Reshiram, Zekrom, Landorus, Kyurem, Keldeo, Meloetta, Genesect, Chespin, Quilladin, Chesnaught, Fennekin, Braixen, Delphox, Froakie, Frogadier, Greninja, Bunnelby, Diggersby, Fletchling, Fletchinder, Talonflame, Scatterbug, Spewpa, Vivillon, Litleo, Pyroar, Flabébé, Floette, Florges, Skiddo, Gogoat, Pancham, Pangoro, Furfrou, Espurr, Meowstic, Honedge, Doublade, Aegislash, Spritzee, Aromatisse, Swirlix, Slurpuff, Inkay, Malamar, Binacle, Barbaracle, Skrelp, Dragalge, Clauncher, Clawitzer, Helioptile, Heliolisk, Tyrunt, Tyrantrum, Amaura, Aurorus, Sylveon, Hawlucha, Dedenne, Carbink, Goomy, Sliggoo, Goodra, Klefki, Phantump, Trevenant, Pumpkaboo, Gourgeist, Bergmite, Avalugg, Noibat, Noivern, Xerneas, Yveltal, Zygarde, Diancie, Hoopa, Volcanion, Rowlet, Dartrix, Decidueye, Litten, Torracat, Incineroar, Popplio, Brionne, Primarina, Pikipek, Trumbeak, Toucannon, Yungoos, Gumshoos, Grubbin, Charjabug, Vikavolt, Crabrawler, Crabominable, Oricorio, Cutiefly, Ribombee, Rockruff, Lycanroc, Wishiwashi, Mareanie, Toxapex, Mudbray, Mudsdale, Dewpider, Araquanid, Fomantis, Lurantis, Morelull, Shiinotic, Salandit, Salazzle, Stufful, Bewear, Bounsweet, Steenee, Tsareena, Comfey, Oranguru, Passimian, Wimpod, Golisopod, Sandygast, Palossand, Pyukumuku, Type: Null, Silvally, Minior, Komala, Turtonator, Togedemaru, Mimikyu, Bruxish, Drampa, Dhelmise, Jangmo-o, Hakamo-o, Kommo-o, Tapu Koko, Tapu Lele, Tapu Bulu, Tapu Fini, Cosmog, Cosmoem, Solgaleo, Lunala, Nihilego, Buzzwole, Pheromosa, Xurkitree, Celesteela, Kartana, Guzzlord, Necrozma, Magearna, Marshadow, Poipole, Naganadel, Stakataka, Blacephalon, Zeraora, Meltan, Melmetal, Grookey, Thwackey, Rillaboom, Scorbunny, Raboot, Cinderace, Sobble, Drizzile, Inteleon, Skwovet, Greedent, Rookidee, Corvisquire, Corviknight, Blipbug, Dottler, Orbeetle, Nickit, Thievul, Gossifleur, Eldegoss, Wooloo, Dubwool, Chewtle, Drednaw, Yamper, Boltund, Rolycoly, Carkol, Coalossal, Applin, Flapple, Appletun, Silicobra, Sandaconda, Cramorant, Arrokuda, Barraskewda, Toxel, Toxtricity, Sizzlipede, Centiskorch, Clobbopus, Grapploct, Sinistea, Polteageist, Hatenna, Hattrem, Hatterene, Impidimp, Morgrem, Grimmsnarl, Obstagoon, Perrserker, Cursola, Sirfetch’d, Mr. Rime, Runerigus, Milcery, Alcremie, Falinks, Pincurchin, Snom, Frosmoth, Stonjourner, Eiscue, Indeedee, Morpeko, Cufant, Copperajah, Dracozolt, Arctozolt, Dracovish, Arctovish, Duraludon, Dreepy, Drakloak, Dragapult, Zacian, Zamazenta, Eternatus, Kubfu, Urshifu, Zarude, Regieleki, Regidrago, Glastrier, Spectrier, Calyrex, Sprigatito, Floragato, Meowscarada, Fuecoco, Crocalor, Skeledirge, Quaxly, Quaxwell, Quaquaval, Lechonk, Oinkologne, Tarountula, Spidops, Nymble, Lokix, Pawmi, Pawmo, Pawmot, Tandemaus, Maushold, Fidough, Dachsbun, Smoliv, Dolliv, Arboliva, Squawkabilly, Nacli, Naclstack, Garganacl, Charcadet, Armarouge, Ceruledge, Tadbulb, Bellibolt, Wattrel, Kilowattrel, Maschiff, Mabosstiff, Shroodle, Grafaiai, Bramblin, Brambleghast, Toedscool, Toedscruel, Klawf, Capsakid, Scovillain, Rellor, Rabsca, Flittle, Espathra, Tinkaton, Wiglett, Wugtrio, Bombirdier, Finizen, Palafin, Varoom, Revavroom, Cyclizar, Orthworm, Glimmet, Glimmora, Greavard, Houndstone, Flamigo, Cetoddle, Cetitan, Veluza, Dondozo, Tatsugiri, Annihilape, Clodsire, Farigiraf, Dudunsparce, Kingambit, Great Tusk, Scream Tail, Brute Bonnet, Flutter Mane, Slither Wing, Sandy Shocks, Iron Treads, Iron Bundle, Iron Hands, Iron Jugulis, Iron Moth, Iron Thorns, Frigibax, Arctibax, Baxcalibur, Gimmighoul, Gholdengo, Wo-Chien, Chien-Pao, Ting-Lu, Chi-Yu, Roaring Moon, Iron Valiant, Koraidon, Miraidon, Walking Wake, Iron Leaves";
+
+// Procesar lista y ordenar
+function buildPokemonArray(raw){
+  const arr = raw.split(',').map(s=>s.trim()).filter(Boolean);
+  const map = {};
+  arr.forEach(n=>{
+    const key = n.toLowerCase();
+    if(!map[key]) map[key] = n;
+  });
+  return Object.values(map).sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
+}
+const ALL_POKEMON = buildPokemonArray(rawPokemonList);
+
+// Crear mapa Pokedex dinámico basado en el orden del rawPokemonList
+const rawArray = rawPokemonList.split(',').map(s => s.trim()).filter(Boolean);
+const POKEDEX_MAP = {};
+rawArray.forEach((name, index) => {
+  POKEDEX_MAP[name] = index + 1;
+});
+
+// Función para obtener el ID de la pokedex para un nombre dado
+function getPokedexId(name){
+  return POKEDEX_MAP[name] || null;
+}
+
+// Función para obtener URL de imagen de Pokémon (arte oficial)
+function getPokemonImage(name) {
+  const id = getPokedexId(name);
+  if (!id) return '';
+  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+}
+
+// Lista de Megaevoluciones (nombre exacto como aparece en la lista original)
+const MEGA_EVOLUTIONS = [
+  "Venusaur-Mega", "Charizard-Mega-X", "Charizard-Mega-Y", "Blastoise-Mega",
+  "Beedrill-Mega", "Pidgeot-Mega", "Alakazam-Mega", "Gengar-Mega",
+  "Kangaskhan-Mega", "Pinsir-Mega", "Gyarados-Mega", "Aerodactyl-Mega",
+  "Mewtwo-Mega-X", "Mewtwo-Mega-Y", "Ampharos-Mega", "Steelix-Mega",
+  "Scizor-Mega", "Heracross-Mega", "Houndoom-Mega", "Tyranitar-Mega",
+  "Blaziken-Mega", "Gardevoir-Mega", "Mawile-Mega", "Aggron-Mega",
+  "Medicham-Mega", "Manectric-Mega", "Sharpedo-Mega", "Camerupt-Mega",
+  "Altaria-Mega", "Banette-Mega", "Absol-Mega", "Glaliere-Mega",
+  "Latias-Mega", "Latios-Mega", "Lopunny-Mega", "Garchomp-Mega",
+  "Lucario-Mega", "Abomasnow-Mega", "Gallade-Mega", "Audino-Mega",
+  "Diancie-Mega", "Hoopa-Mega", "Volcarona-Mega", "Cobalion-Mega",
+  "Terrakion-Mega", "Virizion-Mega", "Tornadus-Mega", "Thundurus-Mega",
+  "Reshiram-Mega", "Zekrom-Mega", "Landorus-Mega", "Kyurem-Mega",
+  "Keldeo-Mega", "Meloetta-Mega", "Genesect-Mega", "Chesnaught-Mega",
+  "Delphox-Mega", "Greninja-Mega", "Blastoise-Mega", "Bewear-Mega",
+  "Sceptile-Mega", "Blaziken-Mega", "Swampert-Mega", "Sableye-Mega",
+  "Garchomp-Mega", "Lucario-Mega", "Abomasnow-Mega", "Gallade-Mega",
+  "Audino-Mega", "Diancie-Mega", "Hoopa-Mega", "Volcarona-Mega"
+];
+
+// Mapa de nombres base -> mega (para mostrar origen)
+const MEGA_BASE_MAP = {
+  "Venusaur-Mega": "Venusaur",
+  "Charizard-Mega-X": "Charizard",
+  "Charizard-Mega-Y": "Charizard",
+  "Blastoise-Mega": "Blastoise",
+  "Beedrill-Mega": "Beedrill",
+  "Pidgeot-Mega": "Pidgeot",
+  "Alakazam-Mega": "Alakazam",
+  "Gengar-Mega": "Gengar",
+  "Kangaskhan-Mega": "Kangaskhan",
+  "Pinsir-Mega": "Pinsir",
+  "Gyarados-Mega": "Gyarados",
+  "Aerodactyl-Mega": "Aerodactyl",
+  "Mewtwo-Mega-X": "Mewtwo",
+  "Mewtwo-Mega-Y": "Mewtwo",
+  "Ampharos-Mega": "Ampharos",
+  "Steelix-Mega": "Steelix",
+  "Scizor-Mega": "Scizor",
+  "Heracross-Mega": "Heracross",
+  "Houndoom-Mega": "Houndoom",
+  "Tyranitar-Mega": "Tyranitar",
+  "Blaziken-Mega": "Blaziken",
+  "Gardevoir-Mega": "Gardevoir",
+  "Mawile-Mega": "Mawile",
+  "Aggron-Mega": "Aggron",
+  "Medicham-Mega": "Medicham",
+  "Manectric-Mega": "Manectric",
+  "Sharpedo-Mega": "Sharpedo",
+  "Camerupt-Mega": "Camerupt",
+  "Altaria-Mega": "Altaria",
+  "Banette-Mega": "Banette",
+  "Absol-Mega": "Absol",
+  "Glaliere-Mega": "Glalie",
+  "Latias-Mega": "Latias",
+  "Latios-Mega": "Latios",
+  "Lopunny-Mega": "Lopunny",
+  "Garchomp-Mega": "Garchomp",
+  "Lucario-Mega": "Lucario",
+  "Abomasnow-Mega": "Abomasnow",
+  "Gallade-Mega": "Gallade",
+  "Audino-Mega": "Audino",
+  "Diancie-Mega": "Diancie",
+  "Hoopa-Mega": "Hoopa",
+  "Volcarona-Mega": "Volcarona",
+  "Cobalion-Mega": "Cobalion",
+  "Terrakion-Mega": "Terrakion",
+  "Virizion-Mega": "Virizion",
+  "Tornadus-Mega": "Tornadus",
+  "Thundurus-Mega": "Thundurus",
+  "Reshiram-Mega": "Reshiram",
+  "Zekrom-Mega": "Zekrom",
+  "Landorus-Mega": "Landorus",
+  "Kyurem-Mega": "Kyurem",
+  "Keldeo-Mega": "Keldeo",
+  "Meloetta-Mega": "Meloetta",
+  "Genesect-Mega": "Genesect",
+  "Chesnaught-Mega": "Chesnaught",
+  "Delphox-Mega": "Delphox",
+  "Greninja-Mega": "Greninja",
+  "Bewear-Mega": "Bewear",
+  "Sceptile-Mega": "Sceptile",
+  "Swampert-Mega": "Swampert",
+  "Sableye-Mega": "Sableye"
+};
+
+/* ---------------------------
+   Storage & sesión
+   --------------------------- */
+const STORE_KEY = 'pkm_league_players';
+const SESSION_KEY = 'pkm_current';
+const ADMIN_PWD = 'admin123';
+
+function getPlayers(){ return JSON.parse(localStorage.getItem(STORE_KEY)) || []; }
+function savePlayers(p){ localStorage.setItem(STORE_KEY, JSON.stringify(p)); }
+function getCurrentPlayerName(){ return localStorage.getItem(SESSION_KEY); }
+function setCurrentPlayerName(n){ localStorage.setItem(SESSION_KEY, n); }
+function clearSession(){ localStorage.removeItem(SESSION_KEY); }
+
+function getCurrentPlayer(){
+  const name = getCurrentPlayerName();
+  if(!name) return null;
+  const players = getPlayers();
+  const player = players.find(x => x.name === name);
+  // Asegurar que las propiedades existan para jugadores antiguos
+  if (player) {
+    if (!player.items) player.items = {};
+    if (!player.medals) player.medals = [];
+    if (!player.gymMedals) player.gymMedals = {}; // { region: [medalla1, medalla2] }
+  }
+  return player ? JSON.parse(JSON.stringify(player)) : null;
+}
+
+/* ---------------------------
+   Definición de Gyms por Región
+   --------------------------- */
+const GYMS_BY_REGION = {
+  "Kanto": [
+    { name: "Gimnasio de Pueblo Paleta", medal: "Medalla Bicicleta", price: 500 },
+    { name: "Gimnasio de Ciudad Plateada", medal: "Medalla Relámpago", price: 500 },
+    { name: "Gimnasio de Ciudad Azulona", medal: "Medalla Cascabel", price: 500 },
+    { name: "Gimnasio de Ciudad Verde", medal: "Medalla Hoja", price: 500 },
+    { name: "Gimnasio de Ciudad Amarilla", medal: "Medalla Trueno", price: 500 },
+    { name: "Gimnasio de Ciudad Roja", medal: "Medalla Fuego", price: 500 },
+    { name: "Gimnasio de Ciudad Morada", medal: "Medalla Sombra", price: 500 },
+    { name: "Gimnasio de Ciudad Violeta", medal: "Medalla Agua", price: 500 }
+  ],
+  "Johto": [
+    { name: "Gimnasio de Ciudad Azurita", medal: "Medalla Escama", price: 500 },
+    { name: "Gimnasio de Ciudad Celeste", medal: "Medalla Pluma", price: 500 },
+    { name: "Gimnasio de Ciudad Rosa", medal: "Medalla Espíritu", price: 500 },
+    { name: "Gimnasio de Ciudad Dorada", medal: "Medalla Piedra", price: 500 },
+    { name: "Gimnasio de Ciudad Naranja", medal: "Medalla Corazón", price: 500 },
+    { name: "Gimnasio de Ciudad Verde Claro", medal: "Medalla Viento", price: 500 },
+    { name: "Gimnasio de Ciudad Negra", medal: "Medalla Oscuridad", price: 500 },
+    { name: "Gimnasio de Ciudad Gris", medal: "Medalla Metal", price: 500 }
+  ],
+  "Hoenn": [
+    { name: "Gimnasio de Ciudad Petróleo", medal: "Medalla Olas", price: 500 },
+    { name: "Gimnasio de Ciudad Arena", medal: "Medalla Tierra", price: 500 },
+    { name: "Gimnasio de Ciudad Tormenta", medal: "Medalla Estrella", price: 500 },
+    { name: "Gimnasio de Ciudad Cristal", medal: "Medalla Hielo", price: 500 },
+    { name: "Gimnasio de Ciudad Neblina", medal: "Medalla Bruma", price: 500 },
+    { name: "Gimnasio de Ciudad Sol", medal: "Medalla Luz", price: 500 },
+    { name: "Gimnasio de Ciudad Lluvia", medal: "Medalla Agua", price: 500 },
+    { name: "Gimnasio de Ciudad Viento", medal: "Medalla Viento", price: 500 }
+  ],
+  "Sinnoh": [
+    { name: "Gimnasio de Ciudad Ambar", medal: "Medalla Arcoíris", price: 500 },
+    { name: "Gimnasio de Ciudad Cobre", medal: "Medalla Llama", price: 500 },
+    { name: "Gimnasio de Ciudad Granito", medal: "Medalla Roca", price: 500 },
+    { name: "Gimnasio de Ciudad Plata", medal: "Medalla Acero", price: 500 },
+    { name: "Gimnasio de Ciudad Nieve", medal: "Medalla Hielo", price: 500 },
+    { name: "Gimnasio de Ciudad Lago", medal: "Medalla Agua", price: 500 },
+    { name: "Gimnasio de Ciudad Fantasma", medal: "Medalla Sombra", price: 500 },
+    { name: "Gimnasio de Ciudad Cielo", medal: "Medalla Volador", price: 500 }
+  ],
+  "Unova": [
+    { name: "Gimnasio de Ciudad Primavera", medal: "Medalla Hierba", price: 500 },
+    { name: "Gimnasio de Ciudad Verano", medal: "Medalla Fuego", price: 500 },
+    { name: "Gimnasio de Ciudad Otoño", medal: "Medalla Tierra", price: 500 },
+    { name: "Gimnasio de Ciudad Invierno", medal: "Medalla Hielo", price: 500 },
+    { name: "Gimnasio de Ciudad Electricidad", medal: "Medalla Trueno", price: 500 },
+    { name: "Gimnasio de Ciudad Agua", medal: "Medalla Agua", price: 500 },
+    { name: "Gimnasio de Ciudad Psíquico", medal: "Medalla Psíquico", price: 500 },
+    { name: "Gimnasio de Ciudad Dragón", medal: "Medalla Dragón", price: 500 }
+  ],
+  "Kalos": [
+    { name: "Gimnasio de Ciudad Prisma", medal: "Medalla Prisma", price: 500 },
+    { name: "Gimnasio de Ciudad Cielo", medal: "Medalla Volador", price: 500 },
+    { name: "Gimnasio de Ciudad Nube", medal: "Medalla Nube", price: 500 },
+    { name: "Gimnasio de Ciudad Rocío", medal: "Medalla Agua", price: 500 },
+    { name: "Gimnasio de Ciudad Fuego", medal: "Medalla Fuego", price: 500 },
+    { name: "Gimnasio de Ciudad Helada", medal: "Medalla Hielo", price: 500 },
+    { name: "Gimnasio de Ciudad Espíritu", medal: "Medalla Espíritu", price: 500 },
+    { name: "Gimnasio de Ciudad Tinta", medal: "Medalla Sombra", price: 500 }
+  ],
+  "Alola": [
+    { name: "Gimnasio de Isla Melemele", medal: "Medalla Estrella", price: 500 },
+    { name: "Gimnasio de Isla Akala", medal: "Medalla Sol", price: 500 },
+    { name: "Gimnasio de Isla Ula'ula", medal: "Medalla Luna", price: 500 },
+    { name: "Gimnasio de Isla Poni", medal: "Medalla Tierra", price: 500 },
+    { name: "Gimnasio de Centro de Entrenamiento", medal: "Medalla Árbol", price: 500 },
+    { name: "Gimnasio de Playa", medal: "Medalla Océano", price: 500 },
+    { name: "Gimnasio de Montaña", medal: "Medalla Roca", price: 500 },
+    { name: "Gimnasio de Templo", medal: "Medalla Espíritu", price: 500 }
+  ],
+  "Galar": [
+    { name: "Gimnasio de Ciudad Turquesa", medal: "Medalla Agua", price: 500 },
+    { name: "Gimnasio de Ciudad Púrpura", medal: "Medalla Psíquico", price: 500 },
+    { name: "Gimnasio de Ciudad Rojo", medal: "Medalla Fuego", price: 500 },
+    { name: "Gimnasio de Ciudad Verde", medal: "Medalla Hierba", price: 500 },
+    { name: "Gimnasio de Ciudad Negro", medal: "Medalla Sombra", price: 500 },
+    { name: "Gimnasio de Ciudad Blanco", medal: "Medalla Lucha", price: 500 },
+    { name: "Gimnasio de Ciudad Amarillo", medal: "Medalla Eléctrico", price: 500 },
+    { name: "Gimnasio de Ciudad Plateado", medal: "Medalla Acero", price: 500 }
+  ],
+  "Paldea": [
+    { name: "Gimnasio de Ciudad Azul", medal: "Medalla Agua", price: 500 },
+    { name: "Gimnasio de Ciudad Amarilla", medal: "Medalla Eléctrico", price: 500 },
+    { name: "Gimnasio de Ciudad Roja", medal: "Medalla Fuego", price: 500 },
+    { name: "Gimnasio de Ciudad Verde", medal: "Medalla Hierba", price: 500 },
+    { name: "Gimnasio de Ciudad Morada", medal: "Medalla Psíquico", price: 500 },
+    { name: "Gimnasio de Ciudad Gris", medal: "Medalla Acero", price: 500 },
+    { name: "Gimnasio de Ciudad Blanca", medal: "Medalla Hielo", price: 500 },
+    { name: "Gimnasio de Ciudad Negra", medal: "Medalla Sombra", price: 500 }
+  ]
+};
+
+const REGIONS = Object.keys(GYMS_BY_REGION);
+
+/* ---------------------------
+   UI helpers
+   --------------------------- */
+const navLinks = document.querySelectorAll('.nav-menu a');
+navLinks.forEach(a=>{
+  a.addEventListener('click', (e)=>{
+    e.preventDefault();
+    const page = a.getAttribute('data-page');
+    go(page);
+  });
+});
+function setActiveNav(page){
+  navLinks.forEach(a=> a.classList.toggle('active', a.getAttribute('data-page')===page) );
+}
+
+/* ---------------------------
+   NAVEGACIÓN
+   --------------------------- */
+function go(page){
+  const pages = ['team','addpoke','shop','ranking','gym','pokedex','mega'];
+  if(!pages.includes(page)) page = 'team';
+  const player = getCurrentPlayer();
+  if(!player && page!=='team' && page!=='ranking' && page!=='gym' && page!=='pokedex' && page!=='mega'){
+    alert('Inicia sesión primero');
+    return;
+  }
+  pages.forEach(p=>{
+    document.getElementById('page-'+p).style.display = (p===page ? 'block' : 'none');
+  });
+  setActiveNav(page);
+  if(page==='team') showMyTeam();
+  if(page==='addpoke') { renderPokeList(); document.getElementById('pokeSearchInput').value = ''; selectedPokeName = null; }
+  if(page==='shop') renderMyItems();
+  if(page==='ranking') {
+    renderRanking();
+    document.getElementById('otherPlayerDetail').style.display = 'none';
+  }
+  if(page==='gym') renderGymMedals();
+  if(page==='pokedex') renderPokedex();
+  if(page==='mega') renderMegaEvolutions();
+}
+
+/* ---------------------------
+   LOGIN / REGISTER
+   --------------------------- */
+function populatePlayerDatalist(){
+  const dl = document.getElementById('playerDatalist');
+  dl.innerHTML = '';
+  getPlayers().forEach(p=> {
+    const opt = document.createElement('option');
+    opt.value = p.name;
+    dl.appendChild(opt);
+  });
+  const sel = document.getElementById('adminPlayerSelect');
+  sel.innerHTML = '<option value="">-- Jugador --</option>';
+  getPlayers().forEach(p=> sel.innerHTML += `<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)}</option>`);
+}
+
+document.getElementById('loginBtn').addEventListener('click', loginOrRegister);
+document.getElementById('logoutBtn').addEventListener('click', ()=>{
+  if(confirm('Cerrar sesión?')){ clearSession(); updateUIAfterLogin(); go('team'); }
+});
+
+function loginOrRegister(){
+  const input = document.getElementById('playerNameInput');
+  let name = (input.value || '').trim();
+  if(!name){ alert('Ingresa un nombre'); return; }
+  let players = getPlayers();
+  let playerIndex = players.findIndex(p=> p.name.toLowerCase()===name.toLowerCase());
+  let currentPlayerRef;
+
+  if(playerIndex === -1){
+    if(!confirm(`Crear nuevo jugador "${name}" con 500 Pokécoins iniciales?`)) return;
+    currentPlayerRef = { name, coins:500, team:[], items:{}, medals:[], gymMedals:{} };
+    players.push(currentPlayerRef);
+    playerIndex = players.length - 1;
+    alert(`Jugador ${name} creado con 500 Pokécoins.`);
+  } else {
+    currentPlayerRef = players[playerIndex];
+    if (!currentPlayerRef.items) currentPlayerRef.items = {};
+    if (!currentPlayerRef.medals) currentPlayerRef.medals = [];
+    if (!currentPlayerRef.gymMedals) currentPlayerRef.gymMedals = {};
+    alert(`Bienvenido de vuelta, ${currentPlayerRef.name}`);
+  }
+
+  savePlayers(players);
+  setCurrentPlayerName(currentPlayerRef.name);
+  input.value = '';
+  populatePlayerDatalist();
+  updateUIAfterLogin();
+  go('team');
+}
+
+function updateUIAfterLogin(){
+  const player = getCurrentPlayer();
+  const loginForm = document.getElementById('loginForm');
+  const coinDisplay = document.getElementById('coinDisplay');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const welcome = document.getElementById('welcomeMsg');
+
+  populatePlayerDatalist();
+
+  if(player){
+    loginForm.style.display = 'none';
+    logoutBtn.style.display = 'inline-block';
+    coinDisplay.textContent = `${player.coins} Pokécoins`;
+    welcome.innerHTML = `Bienvenido, <strong style="color:var(--accent)">${escapeHtml(player.name)}</strong> — Gestiona tu equipo y comodines.`;
+    renderMyItems();
+  } else {
+    loginForm.style.display = 'flex';
+    logoutBtn.style.display = 'none';
+    coinDisplay.textContent = '0 Pokécoins';
+    welcome.textContent = 'Bienvenido a la Liga — inicia sesión para gestionar tu equipo';
+    document.getElementById('myTeamContainer').innerHTML = 'Inicia sesión para ver tu equipo.';
+    document.getElementById('myItemsContainer').innerHTML = 'Inicia sesión para ver tus ítems';
+  }
+}
+
+/* ---------------------------
+   EQUIPO (usuario)
+   --------------------------- */
+function showMyTeam(){
+  const player = getCurrentPlayer();
+  const container = document.getElementById('myTeamContainer');
+  if(!player){ container.innerHTML = 'Inicia sesión para ver tu equipo.'; return; }
+
+  let html = `<h3>${escapeHtml(player.name)} — ${player.team.length}/6 Pokémon</h3><ul>`;
+  if(player.team.length===0) html += '<li>(Equipo vacío)</li>';
+  else player.team.forEach(p=> {
+    const id = getPokedexId(p);
+    const imgSrc = id ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png` : '';
+    html += `<li><img src="${imgSrc}" alt="${escapeHtml(p)}" width="32" height="32" style="vertical-align:middle;margin-right:8px">${escapeHtml(p)} <button class="btn btn-danger" style="padding:5px 8px;margin-left:8px" onclick="removeFromTeam('${escapeHtml(p)}')">Quitar</button></li>`;
+  });
+  html += '</ul>';
+
+  if(player.medals && player.medals.length > 0){
+    html += '<h4>Medallas Generales</h4><ul>';
+    player.medals.forEach(medal => {
+      html += `<li><i class="fas fa-medal" style="color:#ffd700;margin-right:5px"></i> ${escapeHtml(medal)}</li>`;
+    });
+    html += '</ul>';
+  } else {
+    html += '<p>No tienes medallas generales aún.</p>';
+  }
+
+  // Mostrar medallas de Gym
+  const gymMedals = getAllGymMedals(player.gymMedals);
+  if(gymMedals.length > 0){
+    html += '<h4>Medallas de Gym</h4><ul>';
+    gymMedals.forEach(medal => {
+      html += `<li><i class="fas fa-hiking" style="color:#ffae00;margin-right:5px"></i> ${escapeHtml(medal)}</li>`;
+    });
+    html += '</ul>';
+  } else {
+    html += '<p>No tienes medallas de Gym aún.</p>';
+  }
+
+  container.innerHTML = html;
+}
+
+function removeFromTeam(name){
+  if(!confirm(`Quitar ${name} del equipo?`)) return;
+  let players = getPlayers();
+  const currentPlayersName = getCurrentPlayerName();
+  const playerIndex = players.findIndex(p => p.name === currentPlayersName);
+
+  if (playerIndex === -1) {
+    alert('Error: No se encontró al jugador actual en la base de datos.');
+    clearSession();
+    updateUIAfterLogin();
+    go('team');
+    return;
+  }
+
+  players[playerIndex].team = players[playerIndex].team.filter(x => x !== name);
+  savePlayers(players);
+  updateUIAfterLogin();
+  showMyTeam();
+}
+
+/* ---------------------------
+   POKÉMON: render + buscar + seleccionar
+   --------------------------- */
+let filteredPokemon = [...ALL_POKEMON];
+let selectedPokeName = null;
+
+document.getElementById('pokeSearchInput').addEventListener('input', filterPokemon);
+document.getElementById('addPokeBtn').addEventListener('click', addSelectedToTeam);
+
+function filterPokemon(){
+  const q = document.getElementById('pokeSearchInput').value.trim().toLowerCase();
+  filteredPokemon = ALL_POKEMON.filter(n => n.toLowerCase().includes(q));
+  renderPokeList();
+}
+
+function renderPokeList(){
+  const box = document.getElementById('pokeList');
+  box.innerHTML = '';
+  if(filteredPokemon.length === 0){ box.innerHTML = '<div class="poke-item">No encontrado</div>'; return; }
+  filteredPokemon.forEach(name=>{
+    const div = document.createElement('div');
+    div.className = 'poke-item';
+    const id = getPokedexId(name);
+    const imgSrc = id ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png` : '';
+    div.innerHTML = `<img src="${imgSrc}" alt="${escapeHtml(name)}" width="32" height="32"><span>${escapeHtml(name)}</span>`;
+    div.addEventListener('click', () => selectPoke(name, div));
+    box.appendChild(div);
+  });
+}
+
+function selectPoke(name, element){
+  document.querySelectorAll('.poke-item').forEach(it => it.classList.remove('selected'));
+  element.classList.add('selected');
+  selectedPokeName = name;
+}
+
+function addSelectedToTeam(){
+  const player = getCurrentPlayer();
+  if(!player){ alert('Inicia sesión'); return; }
+  if(!selectedPokeName) { alert('Selecciona un Pokémon (clic en la lista)'); return; }
+  if(player.team.length >= 6) { alert('Equipo lleno (6 Pokémon máximo)'); return; }
+  if(player.team.includes(selectedPokeName)) { alert('Ese Pokémon ya está en tu equipo'); return; }
+
+  let players = getPlayers();
+  const playerIndex = players.findIndex(p => p.name === player.name);
+
+  if (playerIndex === -1) { alert('Error: jugador no encontrado en la lista global.'); return; }
+
+  players[playerIndex].team.push(selectedPokeName);
+  savePlayers(players);
+
+  alert(`${selectedPokeName} añadido a tu equipo`);
+  updateUIAfterLogin();
+  showMyTeam();
+  selectedPokeName = null;
+  document.querySelectorAll('.poke-item').forEach(it => it.classList.remove('selected'));
+}
+
+/* ---------------------------
+   TIENDA / COMODINES
+   --------------------------- */
+document.querySelectorAll('#page-shop button[data-item-name]').forEach(btn=>{
+  btn.addEventListener('click', ()=> {
+    const itemName = btn.getAttribute('data-item-name');
+    const price = Number(btn.getAttribute('data-price'));
+    buyComodin(itemName, price);
+  });
+});
+
+function buyComodin(itemName, price){
+  const player = getCurrentPlayer();
+  if(!player){ alert('Inicia sesión'); return; }
+  if(player.coins < price){ alert(`No tienes suficientes Pokécoins (necesitas ${price})`); return; }
+
+  let players = getPlayers();
+  const playerIndex = players.findIndex(p => p.name === player.name);
+
+  if (playerIndex === -1) { alert('Error: jugador no encontrado en la lista global.'); return; }
+
+  if (!players[playerIndex].items) players[playerIndex].items = {};
+
+  players[playerIndex].items[itemName] = (players[playerIndex].items[itemName] || 0) + 1;
+  players[playerIndex].coins -= price;
+  savePlayers(players);
+
+  alert(`${itemName} añadido a tus comodines`);
+  updateUIAfterLogin();
+  renderMyItems();
+}
+
+function renderMyItems(){
+  const player = getCurrentPlayer();
+  const cont = document.getElementById('myItemsContainer');
+  if(!player){ cont.innerHTML = 'Inicia sesión para ver tus comodines'; return; }
+
+  if (player.items) {
+      for (const key in player.items) {
+          if (player.items[key] <= 0) delete player.items[key];
+      }
+  }
+
+  if(!player.items || Object.keys(player.items).length === 0) { cont.innerHTML = '<p>No tienes comodines.</p>'; return; }
+
+  let html = '<ul>';
+  for(const [k,v] of Object.entries(player.items)) {
+    if (v > 0) {
+      html += `<li>${escapeHtml(k)} (x${v}) <button class="btn btn-primary btn-use-item" data-item-name="${escapeHtml(k)}" style="padding:5px 8px;margin-left:8px">Usar</button></li>`;
+    }
+  }
+  html += '</ul>';
+  cont.innerHTML = html;
+
+  document.querySelectorAll('.btn-use-item').forEach(button => {
+    button.addEventListener('click', (e) => {
+      const itemName = e.target.getAttribute('data-item-name');
+      useComodin(itemName);
+    });
+  });
+}
+
+function useComodin(itemName) {
+  const player = getCurrentPlayer();
+  if (!player) { alert('Inicia sesión para usar comodines.'); return; }
+  if (!player.items[itemName] || player.items[itemName] <= 0) { alert('No tienes este comodín.'); return; }
+
+  if (!confirm(`¿Estás seguro de que quieres usar "${itemName}"?`)) return;
+
+  let players = getPlayers();
+  const playerIndex = players.findIndex(p => p.name === player.name);
+
+  if (playerIndex === -1) { alert('Error: jugador actual no encontrado.'); return; }
+
+  players[playerIndex].items[itemName]--;
+
+  let message = `Has usado "${itemName}".`;
+  let actionCancelled = false;
+
+  switch (itemName) {
+    case 'Revivir Pokémon':
+      const pokeToRevive = prompt('¿Qué Pokémon de tu equipo quieres "revivir"? (Este juego no tiene estado de desmayo, solo consume el comodín)');
+      if (pokeToRevive) {
+        message = `Has usado Revivir Pokémon. ${escapeHtml(pokeToRevive)} está listo para la acción.`;
+      } else {
+        message = 'Has usado Revivir Pokémon (sin objetivo específico).';
+      }
+      break;
+    case 'Robo de Monedas':
+      var targetNameSteal = prompt('Ingresa el nombre exacto del jugador a robar monedas:');
+      if (!targetNameSteal) { actionCancelled = true; break; }
+
+      var victimStealIndex = players.findIndex(p => p.name.toLowerCase() === targetNameSteal.toLowerCase());
+      if (victimStealIndex === -1 || players[victimStealIndex].name === player.name) {
+        alert('Objetivo inválido o no encontrado.');
+        actionCancelled = true;
+        break;
+      }
+      var stolenCoins = Math.floor(players[victimStealIndex].coins * 0.10);
+      players[victimStealIndex].coins = Math.max(0, players[victimStealIndex].coins - stolenCoins);
+      players[playerIndex].coins += stolenCoins;
+      message = `¡Has robado ${stolenCoins} Pokécoins a ${escapeHtml(players[victimStealIndex].name)}!`;
+      break;
+    case 'Tótem Inmortalidad':
+      const pokeToImmortalize = prompt('¿Qué Pokémon de tu equipo quieres proteger con el Tótem? (Este juego no tiene un sistema de daño, solo consume el comodín)');
+      if (pokeToImmortalize) {
+        message = `Has usado Tótem de Inmortalidad. ${escapeHtml(pokeToImmortalize)} se siente más seguro.`;
+      } else {
+        message = 'Has usado Tótem de Inmortalidad (sin objetivo específico).';
+      }
+      break;
+    case 'Matar Pokémon Enemigo':
+      var targetNameKill = prompt('Ingresa el nombre exacto del jugador objetivo:');
+
+      if (!targetNameKill) { actionCancelled = true; break; }
+
+      var victimKillIndex = players.findIndex(p => p.name.toLowerCase() === targetNameKill.toLowerCase());
+      if (victimKillIndex === -1 || players[victimKillIndex].name === player.name) {
+        alert('Objetivo inválido o no encontrado.');
+        actionCancelled = true;
+        break;
+      }
+      if (players[victimKillIndex].team.length === 0) {
+        alert('El jugador objetivo no tiene Pokémon en su equipo.');
+        actionCancelled = true;
+        break;
+      }
+      var pokeToKill = prompt(`¿Qué Pokémon quieres eliminar del equipo de ${escapeHtml(players[victimKillIndex].name)}? (nombre exacto)`);
+      if (!pokeToKill || !players[victimKillIndex].team.includes(pokeToKill)) {
+        alert('Pokémon no encontrado en el equipo del objetivo o nombre incorrecto.');
+        actionCancelled = true;
+        break;
+      }
+      players[victimKillIndex].team = players[victimKillIndex].team.filter(p => p !== pokeToKill);
+      message = `¡Has eliminado a ${escapeHtml(pokeToKill)} del equipo de ${escapeHtml(players[victimKillIndex].name)}!`;
+      break;
+    default:
+      alert('Comodín desconocido o sin efecto implementado.');
+      actionCancelled = true;
+      break;
+  }
+
+  if (actionCancelled) {
+    players[playerIndex].items[itemName]++;
+    message = 'Uso del comodín cancelado o fallido.';
+  } else {
+    if (players[playerIndex].items[itemName] <= 0) {
+      delete players[playerIndex].items[itemName];
+    }
+  }
+
+  savePlayers(players);
+  alert(message);
+  updateUIAfterLogin();
+  renderMyItems();
+  if (!actionCancelled && (itemName === 'Robo de Monedas' || itemName === 'Matar Pokémon Enemigo')) {
+    renderRanking();
+    if (getCurrentPlayerName().toLowerCase() === targetNameSteal?.toLowerCase() || getCurrentPlayerName().toLowerCase() === targetNameKill?.toLowerCase()) {
+        showMyTeam();
+    }
+  }
+}
+
+/* ---------------------------
+   RANKING
+   --------------------------- */
+function renderRanking(){
+  const players = [...getPlayers()].sort((a,b)=>b.coins - a.coins);
+  const tbody = document.getElementById('rankBody');
+  tbody.innerHTML = '';
+  players.forEach((p,i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${i+1}</td>
+      <td>${escapeHtml(p.name)}</td>
+      <td>${p.coins}</td>
+      <td>${p.team.length}/6</td>
+      <td><button class="btn btn-primary btn-view-team" data-player-name="${escapeHtml(p.name)}" style="padding:5px 8px;">Ver</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.querySelectorAll('.btn-view-team').forEach(button => {
+    button.addEventListener('click', (e) => {
+      const playerName = e.target.getAttribute('data-player-name');
+      showOtherPlayerTeam(playerName);
+    });
+  });
+}
+
+function showOtherPlayerTeam(playerName) {
+  const player = getPlayers().find(p => p.name === playerName);
+  if (!player) { alert('Jugador no encontrado.'); return; }
+
+  const detailDiv = document.getElementById('otherPlayerDetail');
+  const nameSpan = document.getElementById('otherPlayerName');
+  const teamList = document.getElementById('otherPlayerTeamList');
+  const closeBtn = document.getElementById('closeOtherPlayerDetail');
+
+  nameSpan.textContent = escapeHtml(player.name);
+  teamList.innerHTML = '';
+  if (player.team.length === 0) {
+    teamList.innerHTML = '<li>(Equipo vacío)</li>';
+  } else {
+    player.team.forEach(pName => {
+      const id = getPokedexId(pName);
+      const imgSrc = id ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png` : '';
+      teamList.innerHTML += `<li><img src="${imgSrc}" alt="${escapeHtml(pName)}" width="32" height="32" style="vertical-align:middle;margin-right:8px">${escapeHtml(pName)}</li>`;
+    });
+  }
+
+  detailDiv.style.display = 'block';
+
+  closeBtn.onclick = () => {
+    detailDiv.style.display = 'none';
+  };
+}
+
+/* ---------------------------
+   GYM MEDALLAS
+   --------------------------- */
+
+function getAllGymMedals(gymMedalsObj){
+  const all = [];
+  for(const region in gymMedalsObj){
+    if(Array.isArray(gymMedalsObj[region])){
+      all.push(...gymMedalsObj[region]);
+    }
+  }
+  return all;
+}
+
+function renderGymMedals(){
+  const container = document.getElementById('gymContainer');
+  const player = getCurrentPlayer();
+  const playerGymMedals = player ? player.gymMedals : {};
+
+  container.innerHTML = '';
+
+  REGIONS.forEach(region => {
+    const regionSection = document.createElement('div');
+    regionSection.className = 'gym-region';
+
+    const regionTitle = document.createElement('h3');
+    regionTitle.textContent = region;
+    regionSection.appendChild(regionTitle);
+
+    GYMS_BY_REGION[region].forEach(gym => {
+      const gymRow = document.createElement('div');
+      gymRow.className = 'gym-row';
+
+      const gymInfo = document.createElement('div');
+      gymInfo.innerHTML = `<strong>${escapeHtml(gym.name)}</strong><br><small>${escapeHtml(gym.medal)}</small>`;
+
+      const statusBadge = document.createElement('span');
+      statusBadge.className = `gym-status ${playerGymMedals[region] && playerGymMedals[region].includes(gym.medal) ? 'completed' : 'available'}`;
+      statusBadge.textContent = playerGymMedals[region] && playerGymMedals[region].includes(gym.medal) ? 'Completado' : 'Disponible';
+
+      const challengeBtn = document.createElement('button');
+      challengeBtn.className = 'btn btn-primary';
+      challengeBtn.textContent = 'Desafiar';
+      challengeBtn.disabled = playerGymMedals[region] && playerGymMedals[region].includes(gym.medal);
+      challengeBtn.style.marginLeft = '10px';
+      challengeBtn.onclick = () => challengeGym(region, gym.medal, gym.price);
+
+      gymRow.appendChild(gymInfo);
+      gymRow.appendChild(statusBadge);
+      gymRow.appendChild(challengeBtn);
+      regionSection.appendChild(gymRow);
+    });
+
+    container.appendChild(regionSection);
+  });
+}
+
+function challengeGym(region, medalName, price){
+  const player = getCurrentPlayer();
+  if(!player){
+    alert('Inicia sesión para desafiar un Gym.');
+    return;
+  }
+
+  if(player.coins < price){
+    alert(`Necesitas ${price} Pokécoins para desafiar este Gym.`);
+    return;
+  }
+
+  if(!confirm(`¿Desafiar al Gym de ${region}? Costo: ${price} Pokécoins. Recibirás la medalla "${medalName}".`)){
+    return;
+  }
+
+  let players = getPlayers();
+  const playerIndex = players.findIndex(p => p.name === player.name);
+
+  if (playerIndex === -1) { alert('Error: jugador no encontrado.'); return; }
+
+  // Inicializar array de medallas de Gym para esta región si no existe
+  if (!players[playerIndex].gymMedals[region]) {
+    players[playerIndex].gymMedals[region] = [];
+  }
+
+  // Verificar si ya tiene la medalla
+  if (players[playerIndex].gymMedals[region].includes(medalName)) {
+    alert(`Ya tienes esta medalla.`);
+    return;
+  }
+
+  // Dar medalla
+  players[playerIndex].gymMedals[region].push(medalName);
+  players[playerIndex].coins -= price;
+  players[playerIndex].medals.push(medalName); // También aparece en "Medallas Generales"
+
+  savePlayers(players);
+  alert(`¡Felicidades! Has ganado la medalla "${medalName}" de ${region}.`);
+  updateUIAfterLogin();
+  renderGymMedals(); // Refrescar vista
+  showMyTeam(); // Refrescar equipo para mostrar la medalla
+}
+
+/* ---------------------------
+   ADMIN PANEL (dar monedas/items/medallas)
+   --------------------------- */
+document.getElementById('adminOpenBtn').addEventListener('click', openAdmin);
+document.getElementById('adminCloseBtn').addEventListener('click', closeAdmin);
+document.getElementById('adminGiveCoinsBtn').addEventListener('click', adminGiveCoins);
+document.getElementById('adminGiveItemBtn').addEventListener('click', adminGiveItem);
+document.getElementById('adminGiveMedalBtn').addEventListener('click', adminGiveMedal);
+document.getElementById('adminGiveGymMedalBtn').addEventListener('click', adminGiveGymMedal);
+document.getElementById('adminDeletePlayerBtn').addEventListener('click', adminDeletePlayer); // NUEVO
+
+function openAdmin(){
+  const pass = prompt('Contraseña Admin:');
+  if(pass !== ADMIN_PWD) return alert('Contraseña incorrecta');
+  document.getElementById('adminPanel').style.display = 'block';
+  populatePlayerDatalist();
+}
+function closeAdmin(){ document.getElementById('adminPanel').style.display = 'none'; }
+
+function adminGiveCoins(){
+  const name = document.getElementById('adminPlayerSelect').value;
+  const delta = Number(document.getElementById('adminCoins').value);
+  if(!name || isNaN(delta)) return alert('Selecciona jugador y cantidad válida');
+
+  const players = getPlayers();
+  const playerIndex = players.findIndex(p => p.name === name);
+  if(playerIndex === -1) return alert('Jugador no encontrado');
+
+  players[playerIndex].coins = Math.max(0, players[playerIndex].coins + delta);
+  savePlayers(players);
+  alert(`Monedas actualizadas: ${players[playerIndex].name} → ${players[playerIndex].coins}`);
+  updateUIAfterLogin();
+  populatePlayerDatalist();
+  renderRanking();
+}
+
+function adminGiveItem(){
+  const name = document.getElementById('adminPlayerSelect').value;
+  const item = document.getElementById('adminItem').value;
+  const qty = Math.max(1, Number(document.getElementById('adminItemQty').value || 1));
+  if(!name || !item) return alert('Selecciona jugador e ítem');
+
+  const players = getPlayers();
+  const playerIndex = players.findIndex(p => p.name === name);
+  if(playerIndex === -1) return alert('Jugador no encontrado');
+
+  if (!players[playerIndex].items) players[playerIndex].items = {};
+
+  players[playerIndex].items[item] = (players[playerIndex].items[item] || 0) + qty;
+  savePlayers(players);
+  alert(`${qty}x ${item} dado(s) a ${players[playerIndex].name}`);
+  populatePlayerDatalist();
+  if (getCurrentPlayerName() === name) renderMyItems();
+}
+
+function adminGiveMedal(){
+  const name = document.getElementById('adminPlayerSelect').value;
+  const medalName = document.getElementById('adminMedal').value.trim();
+  if(!name || !medalName) return alert('Selecciona jugador y nombre de medalla');
+
+  const players = getPlayers();
+  const playerIndex = players.findIndex(p => p.name === name);
+  if(playerIndex === -1) return alert('Jugador no encontrado');
+
+  if (!players[playerIndex].medals) players[playerIndex].medals = [];
+
+  if (players[playerIndex].medals.includes(medalName)) {
+    alert(`${players[playerIndex].name} ya tiene la medalla "${medalName}".`);
+    return;
+  }
+  players[playerIndex].medals.push(medalName);
+  savePlayers(players);
+  alert(`Medalla "${medalName}" dada a ${players[playerIndex].name}`);
+  populatePlayerDatalist();
+  if (getCurrentPlayerName() === name) showMyTeam();
+  document.getElementById('adminMedal').value = '';
+}
+
+function adminGiveGymMedal(){
+  const name = document.getElementById('adminPlayerSelect').value;
+  const medalName = document.getElementById('adminGymMedal').value.trim();
+  const region = document.getElementById('adminGymRegion').value;
+
+  if(!name || !medalName || !region) return alert('Selecciona jugador, medalla y región');
+
+  const players = getPlayers();
+  const playerIndex = players.findIndex(p => p.name === name);
+  if(playerIndex === -1) return alert('Jugador no encontrado');
+
+  if (!players[playerIndex].gymMedals) players[playerIndex].gymMedals = {};
+  if (!players[playerIndex].gymMedals[region]) players[playerIndex].gymMedals[region] = [];
+
+  if (players[playerIndex].gymMedals[region].includes(medalName)) {
+    alert(`${players[playerIndex].name} ya tiene la medalla "${medalName}" de ${region}.`);
+    return;
+  }
+
+  players[playerIndex].gymMedals[region].push(medalName);
+  players[playerIndex].medals.push(medalName); // También lo muestra en medallas generales
+  savePlayers(players);
+  alert(`Medalla "${medalName}" de ${region} dada a ${players[playerIndex].name}`);
+  populatePlayerDatalist();
+  if (getCurrentPlayerName() === name) {
+    renderGymMedals();
+    showMyTeam();
+  }
+  document.getElementById('adminGymMedal').value = '';
+  document.getElementById('adminGymRegion').value = '';
+}
+
+function adminDeletePlayer(){
+  const name = document.getElementById('adminPlayerSelect').value;
+  if(!name) return alert('Selecciona un jugador para eliminar');
+
+  if(!confirm(`⚠️ ¿Estás seguro de eliminar completamente a "${name}"? Esto borrará todo su progreso (equipo, monedas, ítems, medallas). ¡NO SE PUEDE DESHAZER!`)){
+    return;
+  }
+
+  let players = getPlayers();
+  const playerIndex = players.findIndex(p => p.name === name);
+  if(playerIndex === -1) return alert('Jugador no encontrado');
+
+  players.splice(playerIndex, 1);
+  savePlayers(players);
+
+  alert(`Jugador "${name}" eliminado permanentemente.`);
+  populatePlayerDatalist();
+  updateUIAfterLogin();
+  if(getCurrentPlayerName() === name) clearSession();
+}
+
+/* ---------------------------
+   POKÉDEX
+   --------------------------- */
+function renderPokedex(){
+  const grid = document.getElementById('pokedexGrid');
+  const searchInput = document.getElementById('pokedexSearch');
+  grid.innerHTML = '';
+
+  const query = searchInput.value.trim().toLowerCase();
+  const filtered = ALL_POKEMON.filter(name =>
+    name.toLowerCase().includes(query)
+  );
+
+  filtered.forEach(name => {
+    const id = getPokedexId(name);
+    const imgSrc = getPokemonImage(name); // Usa arte oficial
+    const card = document.createElement('div');
+    card.className = 'pokedex-card';
+    card.innerHTML = `
+      <img src="${imgSrc || 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/0.png'}" alt="${escapeHtml(name)}">
+      <div class="id">#${id}</div>
+      <div class="name">${escapeHtml(name)}</div>
+    `;
+    grid.appendChild(card);
+  });
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 40px;">No se encontraron Pokémon</div>';
+  }
+}
+
+document.getElementById('pokedexSearch').addEventListener('input', renderPokedex);
+
+/* ---------------------------
+   MEGA EVOLUCIONES
+   --------------------------- */
+function renderMegaEvolutions(){
+  const grid = document.getElementById('megaGrid');
+  const searchInput = document.getElementById('megaSearch');
+  grid.innerHTML = '';
+
+  const query = searchInput.value.trim().toLowerCase();
+  const filtered = MEGA_EVOLUTIONS.filter(name =>
+    name.toLowerCase().includes(query)
+  );
+
+  filtered.forEach(name => {
+    const baseName = MEGA_BASE_MAP[name] || "Desconocido";
+    const id = getPokedexId(baseName);
+    const imgSrc = id ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png` : '';
+    const card = document.createElement('div');
+    card.className = 'mega-card';
+    card.innerHTML = `
+      <img src="${imgSrc || 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/0.png'}" alt="${escapeHtml(name)}">
+      <div class="name">${escapeHtml(name)}</div>
+      <div class="base">Base: ${escapeHtml(baseName)}</div>
+    `;
+    grid.appendChild(card);
+  });
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 40px;">No se encontraron Megaevoluciones</div>';
+  }
+}
+
+document.getElementById('megaSearch').addEventListener('input', renderMegaEvolutions);
+
+/* ---------------------------
+   Utils
+   --------------------------- */
+function escapeHtml(s){
+  if (typeof s !== 'string') s = String(s);
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+/* ---------------------------
+   INIT
+   --------------------------- */
+window.addEventListener('load', () => {
+  filteredPokemon = [...ALL_POKEMON];
+  renderPokeList();
+  populatePlayerDatalist();
+  updateUIAfterLogin();
+  go('team');
+});
+</script>
+</body>
+</html>
