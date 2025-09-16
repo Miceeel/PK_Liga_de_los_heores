@@ -333,18 +333,20 @@ input,select,textarea{width:100%;padding:9px;border-radius:8px;border:1px solid 
 
 <script>
 // ============================================
-// CONFIGURACIÓN DE SUPABASE - MODIFICAR AQUÍ
+// 🔄 MODIFICADO: CONFIGURACIÓN DE SUPABASE MEJORADA
 // ============================================
 let supabase = null;
+let isSupabaseReady = false;
 
 // Verificar si Supabase está disponible
 if (typeof window.supabase !== 'undefined') {
-    // REEMPLAZA ESTOS VALORES CON TUS CREDENCIALES DE SUPABASE
-    const SUPABASE_URL = 'https://xcmkidycfpprozuibmsu.supabase.co'; // <- CAMBIAR
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjbWtpZHljZnBwcm96dWlibXN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5OTg0NzAsImV4cCI6MjA3MzU3NDQ3MH0.sF0lDu0z14aUa7d7hssJ4MEwKj1V_n8Iyi0mdm2sHuQ'; // <- CAMBIAR
+    // ⚠️ IMPORTANTE: REEMPLAZA ESTOS VALORES CON TUS CREDENCIALES DE SUPABASE
+    const SUPABASE_URL = 'https://xcmkidycfpprozuibmsu.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjbWtpZHljZnBwcm96dWlibXN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5OTg0NzAsImV4cCI6MjA3MzU3NDQ3MH0.sF0lDu0z14aUa7d7hssJ4MEwKj1V_n8Iyi0mdm2sHuQ';
     
     try {
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        isSupabaseReady = true;
         console.log('✅ Supabase inicializado correctamente');
     } catch (error) {
         console.error('❌ Error al inicializar Supabase:', error);
@@ -354,66 +356,140 @@ if (typeof window.supabase !== 'undefined') {
     console.warn('⚠️ Supabase no está cargado. Usando localStorage como fallback.');
 }
 
-// Funciones de base de datos con fallback a localStorage
+// 🔄 MODIFICADO: Funciones de base de datos con Supabase y localStorage como respaldo
 async function getAllPlayersFromDB() {
-    if (supabase && typeof supabase.from === 'function') {
-        try {
-            const { data, error } = await supabase
-                .from('players') // Asegúrate de que tu tabla se llame 'players'
-                .select('*');
-            
-            if (error) throw error;
-            return data || [];
-        } catch (error) {
-            console.error('Error al obtener jugadores de Supabase:', error);
-            return getPlayers(); // Fallback a localStorage
-        }
-    } else {
-        return getPlayers(); // Usar localStorage si Supabase no está disponible
-    }
-}
-
-async function savePlayerToDB(player) {
-    if (supabase && typeof supabase.from === 'function') {
+    if (isSupabaseReady) {
         try {
             const { data, error } = await supabase
                 .from('players')
-                .upsert(player, { onConflict: 'name' });
+                .select('*')
+                .order('coins', { ascending: false }); // Ordenar por monedas
             
             if (error) throw error;
-            return true;
-        } catch (error) {
-            console.error('Error al guardar en Supabase:', error);
-            // Fallback a localStorage
-            let players = getPlayers();
-            const index = players.findIndex(p => p.name === player.name);
-            if (index >= 0) {
-                players[index] = player;
-            } else {
-                players.push(player);
+            
+            // Sincronizar con localStorage para respaldo
+            if (data) {
+                localStorage.setItem(STORE_KEY, JSON.stringify(data));
             }
-            savePlayers(players);
-            return true;
+            
+            return data || [];
+        } catch (error) {
+            console.error('Error al obtener jugadores de Supabase:', error);
+            // Fallback a localStorage
+            return getPlayers();
         }
     } else {
-        // Usar localStorage si Supabase no está disponible
-        let players = getPlayers();
-        const index = players.findIndex(p => p.name === player.name);
-        if (index >= 0) {
-            players[index] = player;
-        } else {
-            players.push(player);
-        }
-        savePlayers(players);
-        return true;
+        return getPlayers();
     }
+}
+
+// 🔄 MODIFICADO: Guardar jugador en Supabase con sincronización
+async function savePlayerToDB(player) {
+    // Siempre guardar en localStorage primero (respaldo inmediato)
+    let players = getPlayers();
+    const index = players.findIndex(p => p.name === player.name);
+    if (index >= 0) {
+        players[index] = player;
+    } else {
+        players.push(player);
+    }
+    savePlayers(players);
+    
+    // Intentar guardar en Supabase
+    if (isSupabaseReady) {
+        try {
+            const { data, error } = await supabase
+                .from('players')
+                .upsert({
+                    ...player,
+                    updated_at: new Date().toISOString()
+                }, { 
+                    onConflict: 'name',
+                    ignoreDuplicates: false 
+                });
+            
+            if (error) throw error;
+            console.log('✅ Guardado en Supabase:', player.name);
+            return true;
+        } catch (error) {
+            console.error('❌ Error al guardar en Supabase:', error);
+            console.log('💾 Datos guardados solo en localStorage');
+            return false;
+        }
+    }
+    return false;
+}
+
+// 🔄 MODIFICADO: Eliminar jugador de Supabase
+async function deletePlayerFromDB(playerName) {
+    // Eliminar de localStorage primero
+    let players = getPlayers();
+    players = players.filter(p => p.name !== playerName);
+    savePlayers(players);
+    
+    // Intentar eliminar de Supabase
+    if (isSupabaseReady) {
+        try {
+            const { error } = await supabase
+                .from('players')
+                .delete()
+                .eq('name', playerName);
+            
+            if (error) throw error;
+            console.log('✅ Eliminado de Supabase:', playerName);
+            return true;
+        } catch (error) {
+            console.error('❌ Error al eliminar de Supabase:', error);
+            return false;
+        }
+    }
+    return false;
+}
+
+// 🔄 MODIFICADO: Obtener jugador actual con sincronización
+async function getCurrentPlayerAsync() {
+    const name = getCurrentPlayerName();
+    if (!name) return null;
+    
+    if (isSupabaseReady) {
+        try {
+            const { data, error } = await supabase
+                .from('players')
+                .select('*')
+                .eq('name', name)
+                .single();
+            
+            if (error) throw error;
+            
+            // Asegurar propiedades para compatibilidad
+            if (data) {
+                if (!data.items) data.items = {};
+                if (!data.medals) data.medals = [];
+                if (!data.gymMedals) data.gymMedals = {};
+                
+                // Actualizar localStorage con datos de Supabase
+                let players = getPlayers();
+                const index = players.findIndex(p => p.name === name);
+                if (index >= 0) {
+                    players[index] = data;
+                    savePlayers(players);
+                }
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('Error obteniendo jugador de Supabase:', error);
+            return getCurrentPlayer(); // Fallback a localStorage
+        }
+    }
+    
+    return getCurrentPlayer();
 }
 
 // Tu código JavaScript existente continúa aquí...
 const rawPokemonList = "Bulbasaur, Ivysaur, Venusaur, Charmander, Charmeleon, Charizard, Squirtle, Wartortle, Blastoise, Caterpie, Metapod, Butterfree, Weedle, Kakuna, Beedrill, Pidgey, Pidgeotto, Pidgeot, Rattata, Raticate, Spearow, Fearow, Ekans, Arbok, Pikachu, Raichu, Sandshrew, Sandslash, Nidoran♀, Nidorina, Nidoqueen, Nidoran♂, Nidorino, Nidoking, Clefairy, Clefable, Vulpix, Ninetales, Jigglypuff, Wigglytuff, Zubat, Golbat, Oddish, Gloom, Vileplume, Paras, Parasect, Venonat, Venomoth, Diglett, Dugtrio, Meowth, Persian, Psyduck, Golduck, Mankey, Primeape, Growlithe, Arcanine, Poliwag, Poliwhirl, Poliwrath, Abra, Kadabra, Alakazam, Machop, Machoke, Machamp, Bellsprout, Weepinbell, Victreebel, Tentacool, Tentacruel, Geodude, Graveler, Golem, Ponyta, Rapidash, Slowpoke, Slowbro, Magnemite, Magneton, Farfetch'd, Doduo, Dodrio, Seel, Dewgong, Grimer, Muk, Shellder, Cloyster, Gastly, Haunter, Gengar, Onix, Drowzee, Hypno, Krabby, Kingler, Voltorb, Electrode, Exeggcute, Exeggutor, Cubone, Marowak, Hitmonlee, Hitmonchan, Lickitung, Koffing, Weezing, Rhyhorn, Rhydon, Chansey, Tangela, Kangaskhan, Horsea, Seadra, Goldeen, Seaking, Staryu, Starmie, Mr. Mime, Scyther, Jynx, Electabuzz, Magmar, Pinsir, Tauros, Magikarp, Gyarados, Lapras, Ditto, Eevee, Vaporeon, Jolteon, Flareon, Porygon, Omanyte, Omastar, Kabuto, Kabutops, Aerodactyl, Snorlax, Articuno, Zapdos, Moltres, Dratini, Dragonair, Dragonite, Mewtwo, Mew, Chikorita, Bayleef, Meganium, Cyndaquil, Quilava, Typhlosion, Totodile, Croconaw, Feraligatr, Sentret, Furret, Hoothoot, Noctowl, Ledyba, Ledian, Spinarak, Ariados, Crobat, Chinchou, Lanturn, Pichu, Cleffa, Igglybuff, Togepi, Togetic, Natu, Xatu, Mareep, Flaaffy, Ampharos, Bellossom, Marill, Azumarill, Sudowoodo, Politoed, Hoppip, Skiploom, Jumpluff, Aipom, Sunkern, Sunflora, Yanma, Wooper, Quagsire, Espeon, Umbreon, Murkrow, Slowking, Misdreavus, Unown, Wobbuffet, Girafarig, Pineco, Forretress, Dunsparce, Gligar, Steelix, Snubbull, Granbull, Qwilfish, Scizor, Shuckle, Heracross, Sneasel, Teddiursa, Ursaring, Slugma, Magcargo, Swinub, Piloswine, Corsola, Remoraid, Octillery, Delibird, Mantine, Skarmory, Houndour, Houndoom, Kingdra, Phanpy, Donphan, Porygon2, Stantler, Smeargle, Tyrogue, Hitmontop, Smoochum, Elekid, Magby, Miltank, Blissey, Raikou, Entei, Suicune, Larvitar, Pupitar, Tyranitar, Lugia, Ho-oh, Celebi, Treecko, Grovyle, Sceptile, Torchic, Combusken, Blaziken, Mudkip, Marshtomp, Swampert, Poochyena, Mightyena, Zigzagoon, Linoone, Wurmple, Silcoon, Beautifly, Cascoon, Dustox, Lotad, Lombre, Ludicolo, Seedot, Nuzleaf, Shiftry, Taillow, Swellow, Wingull, Pelipper, Ralts, Kirlia, Gardevoir, Surskit, Masquerain, Shroomish, Breloom, Slakoth, Vigoroth, Slaking, Nincada, Ninjask, Shedinja, Whismur, Loudred, Exploud, Makuhita, Hariyama, Azurill, Nosepass, Skitty, Delcatty, Sableye, Mawile, Aron, Lairon, Aggron, Meditite, Medicham, Electrike, Manectric, Plusle, Minun, Volbeat, Illumise, Roselia, Gulpin, Swalot, Carvanha, Sharpedo, Wailmer, Wailord, Numel, Camerupt, Torkoal, Spoink, Grumpig, Spinda, Trapinch, Vibrava, Flygon, Cacnea, Cacturne, Swablu, Altaria, Zangoose, Seviper, Lunatone, Solrock, Barboach, Whiscash, Corphish, Crawdaunt, Baltoy, Claydol, Lileep, Cradily, Anorith, Armaldo, Feebas, Milotic, Castform, Kecleon, Shuppet, Banette, Duskull, Dusclops, Tropius, Chimecho, Absol, Wynaut, Snorunt, Glalie, Spheal, Sealeo, Walrein, Clamperl, Huntail, Gorebyss, Relicanth, Luvdisc, Bagon, Shelgon, Salamence, Beldum, Metang, Metagross, Regirock, Regice, Registeel, Latias, Latios, Kyogre, Groudon, Rayquaza, Jirachi, Deoxys, Turtwig, Grotle, Torterra, Chimchar, Monferno, Infernape, Piplup, Prinplup, Empoleon, Starly, Staravia, Staraptor, Bidoof, Bibarel, Kricketot, Kricketune, Shinx, Luxio, Luxray, Budew, Roserade, Cranidos, Rampardos, Shieldon, Bastiodon, Burmy, Wormadam, Mothim, Combee, Vespiquen, Pachirisu, Buizel, Floatzel, Cherubi, Cherrim, Shellos, Gastrodon, Ambipom, Drifloon, Drifblim, Buneary, Lopunny, Mismagius, Honchkrow, Glameow, Purugly, Chingling, Stunky, Skuntank, Bronzor, Bronzong, Bonsly, Mime Jr., Happiny, Chatot, Spiritomb, Gible, Gabite, Garchomp, Munchlax, Riolu, Lucario, Hippopotas, Hippowdon, Skorupi, Drapion, Croagunk, Toxicroak, Carnivine, Finneon, Lumineon, Mantyke, Snover, Abomasnow, Weavile, Magnezone, Lickilicky, Rhyperior, Tangrowth, Electivire, Magmortar, Togekiss, Yanmega, Leafeon, Glaceon, Gliscor, Mamoswine, Porygon-Z, Gallade, Probopass, Dusknoir, Froslass, Rotom, Uxie, Mesprit, Azelf, Dialga, Palkia, Heatran, Regigigas, Giratina, Cresselia, Phione, Manaphy, Darkrai, Shaymin, Arceus, Victini, Snivy, Servine, Serperior, Tepig, Pignite, Emboar, Oshawott, Dewott, Samurott, Patrat, Watchog, Lillipup, Herdier, Stoutland, Purrloin, Liepard, Pansage, Simisage, Pansear, Simisear, Panpour, Simipour, Munna, Musharna, Pidove, Tranquill, Unfezant, Blitzle, Zebstrika, Roggenrola, Boldore, Gigalith, Woobat, Swoobat, Drilbur, Excadrill, Audino, Timburr, Gurdurr, Conkeldurr, Tympole, Palpitoad, Seismitoad, Throh, Sawk, Sewaddle, Swadloon, Leavanny, Venipede, Whirlipede, Scolipede, Cottonee, Whimsicott, Petilil, Lilligant, Basculin, Sandile, Krokorok, Krookodile, Darumaka, Darmanitan, Maractus, Dwebble, Crustle, Scraggy, Scrafty, Sigilyph, Yamask, Cofagrigus, Tirtouga, Carracosta, Archen, Archeops, Trubbish, Garbodor, Zorua, Zoroark, Minccino, Cinccino, Gothita, Gothorita, Gothitelle, Solosis, Duosion, Reuniclus, Ducklett, Swanna, Vanillite, Vanillish, Vanilluxe, Deerling, Sawsbuck, Emolga, Karrablast, Escavalier, Foongus, Amoonguss, Frillish, Jellicent, Alomomola, Joltik, Galvantula, Ferroseed, Ferrothorn, Klink, Klang, Klinklang, Tynamo, Eelektrik, Eelektross, Elgyem, Beheeyem, Litwick, Lampent, Chandelure, Axew, Fraxure, Haxorus, Cubchoo, Beartic, Cryogonal, Shelmet, Accelgor, Stunfisk, Mienfoo, Mienshao, Druddigon, Golett, Golurk, Pawniard, Bisharp, Bouffalant, Rufflet, Braviary, Vullaby, Mandibuzz, Heatmor, Durant, Deino, Zweilous, Hydreigon, Larvesta, Volcarona, Cobalion, Terrakion, Virizion, Tornadus, Thundurus, Reshiram, Zekrom, Landorus, Kyurem, Keldeo, Meloetta, Genesect, Chespin, Quilladin, Chesnaught, Fennekin, Braixen, Delphox, Froakie, Frogadier, Greninja, Bunnelby, Diggersby, Fletchling, Fletchinder, Talonflame, Scatterbug, Spewpa, Vivillon, Litleo, Pyroar, Flabébé, Floette, Florges, Skiddo, Gogoat, Pancham, Pangoro, Furfrou, Espurr, Meowstic, Honedge, Doublade, Aegislash, Spritzee, Aromatisse, Swirlix, Slurpuff, Inkay, Malamar, Binacle, Barbaracle, Skrelp, Dragalge, Clauncher, Clawitzer, Helioptile, Heliolisk, Tyrunt, Tyrantrum, Amaura, Aurorus, Sylveon, Hawlucha, Dedenne, Carbink, Goomy, Sliggoo, Goodra, Klefki, Phantump, Trevenant, Pumpkaboo, Gourgeist, Bergmite, Avalugg, Noibat, Noivern, Xerneas, Yveltal, Zygarde, Diancie, Hoopa, Volcanion, Rowlet, Dartrix, Decidueye, Litten, Torracat, Incineroar, Popplio, Brionne, Primarina, Pikipek, Trumbeak, Toucannon, Yungoos, Gumshoos, Grubbin, Charjabug, Vikavolt, Crabrawler, Crabominable, Oricorio, Cutiefly, Ribombee, Rockruff, Lycanroc, Wishiwashi, Mareanie, Toxapex, Mudbray, Mudsdale, Dewpider, Araquanid, Fomantis, Lurantis, Morelull, Shiinotic, Salandit, Salazzle, Stufful, Bewear, Bounsweet, Steenee, Tsareena, Comfey, Oranguru, Passimian, Wimpod, Golisopod, Sandygast, Palossand, Pyukumuku, Type: Null, Silvally, Minior, Komala, Turtonator, Togedemaru, Mimikyu, Bruxish, Drampa, Dhelmise, Jangmo-o, Hakamo-o, Kommo-o, Tapu Koko, Tapu Lele, Tapu Bulu, Tapu Fini, Cosmog, Cosmoem, Solgaleo, Lunala, Nihilego, Buzzwole, Pheromosa, Xurkitree, Celesteela, Kartana, Guzzlord, Necrozma, Magearna, Marshadow, Poipole, Naganadel, Stakataka, Blacephalon, Zeraora, Meltan, Melmetal, Grookey, Thwackey, Rillaboom, Scorbunny, Raboot, Cinderace, Sobble, Drizzile, Inteleon, Skwovet, Greedent, Rookidee, Corvisquire, Corviknight, Blipbug, Dottler, Orbeetle, Nickit, Thievul, Gossifleur, Eldegoss, Wooloo, Dubwool, Chewtle, Drednaw, Yamper, Boltund, Rolycoly, Carkol, Coalossal, Applin, Flapple, Appletun, Silicobra, Sandaconda, Cramorant, Arrokuda, Barraskewda, Toxel, Toxtricity, Sizzlipede, Centiskorch, Clobbopus, Grapploct, Sinistea, Polteageist, Hatenna, Hattrem, Hatterene, Impidimp, Morgrem, Grimmsnarl, Obstagoon, Perrserker, Cursola, Sirfetch'd, Mr. Rime, Runerigus, Milcery, Alcremie, Falinks, Pincurchin, Snom, Frosmoth, Stonjourner, Eiscue, Indeedee, Morpeko, Cufant, Copperajah, Dracozolt, Arctozolt, Dracovish, Arctovish, Duraludon, Dreepy, Drakloak, Dragapult, Zacian, Zamazenta, Eternatus, Kubfu, Urshifu, Zarude, Regieleki, Regidrago, Glastrier, Spectrier, Calyrex, Sprigatito, Floragato, Meowscarada, Fuecoco, Crocalor, Skeledirge, Quaxly, Quaxwell, Quaquaval, Lechonk, Oinkologne, Tarountula, Spidops, Nymble, Lokix, Pawmi, Pawmo, Pawmot, Tandemaus, Maushold, Fidough, Dachsbun, Smoliv, Dolliv, Arboliva, Squawkabilly, Nacli, Naclstack, Garganacl, Charcadet, Armarouge, Ceruledge, Tadbulb, Bellibolt, Wattrel, Kilowattrel, Maschiff, Mabosstiff, Shroodle, Grafaiai, Bramblin, Brambleghast, Toedscool, Toedscruel, Klawf, Capsakid, Scovillain, Rellor, Rabsca, Flittle, Espathra, Tinkaton, Wiglett, Wugtrio, Bombirdier, Finizen, Palafin, Varoom, Revavroom, Cyclizar, Orthworm, Glimmet, Glimmora, Greavard, Houndstone, Flamigo, Cetoddle, Cetitan, Veluza, Dondozo, Tatsugiri, Annihilape, Clodsire, Farigiraf, Dudunsparce, Kingambit, Great Tusk, Scream Tail, Brute Bonnet, Flutter Mane, Slither Wing, Sandy Shocks, Iron Treads, Iron Bundle, Iron Hands, Iron Jugulis, Iron Moth, Iron Thorns, Frigibax, Arctibax, Baxcalibur, Gimmighoul, Gholdengo, Wo-Chien, Chien-Pao, Ting-Lu, Chi-Yu, Roaring Moon, Iron Valiant, Koraidon, Miraidon, Walking Wake, Iron Leaves";
 
-// El resto de tu código JavaScript continúa igual...
-// [Todo el resto del código JavaScript se mantiene igual]
+// El resto de tu código JavaScript continúa igual pero con las funciones async...
 
 // Procesar lista y ordenar
 function buildPokemonArray(raw){
@@ -535,7 +611,7 @@ const MEGA_BASE_MAP = {
 };
 
 /* ---------------------------
-   Storage & sesión
+   Storage & sesión (manteniendo compatibilidad con localStorage)
    --------------------------- */
 const STORE_KEY = 'pkm_league_players';
 const SESSION_KEY = 'pkm_current';
@@ -556,7 +632,7 @@ function getCurrentPlayer(){
   if (player) {
     if (!player.items) player.items = {};
     if (!player.medals) player.medals = [];
-    if (!player.gymMedals) player.gymMedals = {}; // { region: [medalla1, medalla2] }
+    if (!player.gymMedals) player.gymMedals = {};
   }
   return player ? JSON.parse(JSON.stringify(player)) : null;
 }
@@ -702,13 +778,13 @@ function go(page){
 }
 
 /* ---------------------------
-   LOGIN / REGISTER - MODIFICADO PARA USAR ASYNC
+   LOGIN / REGISTER - 🔄 MODIFICADO PARA USAR ASYNC
    --------------------------- */
 async function populatePlayerDatalist(){
   const dl = document.getElementById('playerDatalist');
   dl.innerHTML = '';
   
-  const players = await getAllPlayersFromDB(); // Usar función async
+  const players = await getAllPlayersFromDB(); // 🔄 MODIFICADO: Usar función async
   
   players.forEach(p=> {
     const opt = document.createElement('option');
@@ -725,19 +801,20 @@ document.getElementById('logoutBtn').addEventListener('click', ()=>{
   if(confirm('Cerrar sesión?')){ clearSession(); updateUIAfterLogin(); go('team'); }
 });
 
+// 🔄 MODIFICADO: Login/Register con Supabase
 async function loginOrRegister(){
   const input = document.getElementById('playerNameInput');
   let name = (input.value || '').trim();
   if(!name){ alert('Ingresa un nombre'); return; }
   
-  let players = await getAllPlayersFromDB(); // Usar función async
+  let players = await getAllPlayersFromDB();
   let playerIndex = players.findIndex(p=> p.name.toLowerCase()===name.toLowerCase());
   let currentPlayerRef;
 
   if(playerIndex === -1){
     if(!confirm(`Crear nuevo jugador "${name}" con 500 Pokécoins iniciales?`)) return;
     currentPlayerRef = { name, coins:500, team:[], items:{}, medals:[], gymMedals:{} };
-    await savePlayerToDB(currentPlayerRef); // Guardar en DB
+    await savePlayerToDB(currentPlayerRef);
     alert(`Jugador ${name} creado con 500 Pokécoins.`);
   } else {
     currentPlayerRef = players[playerIndex];
@@ -755,7 +832,7 @@ async function loginOrRegister(){
 }
 
 async function updateUIAfterLogin(){
-  const player = getCurrentPlayer();
+  const player = await getCurrentPlayerAsync(); // 🔄 MODIFICADO: Usar versión async
   const loginForm = document.getElementById('loginForm');
   const coinDisplay = document.getElementById('coinDisplay');
   const logoutBtn = document.getElementById('logoutBtn');
@@ -779,14 +856,11 @@ async function updateUIAfterLogin(){
   }
 }
 
-// El resto del código se mantiene igual...
-// [Todo el resto del código JavaScript se mantiene igual desde showMyTeam() en adelante]
-
 /* ---------------------------
-   EQUIPO (usuario)
+   EQUIPO (usuario) - 🔄 MODIFICADO PARA ASYNC
    --------------------------- */
-function showMyTeam(){
-  const player = getCurrentPlayer();
+async function showMyTeam(){
+  const player = await getCurrentPlayerAsync(); // 🔄 MODIFICADO
   const container = document.getElementById('myTeamContainer');
   if(!player){ container.innerHTML = 'Inicia sesión para ver tu equipo.'; return; }
 
@@ -824,22 +898,21 @@ function showMyTeam(){
   container.innerHTML = html;
 }
 
-function removeFromTeam(name){
+// 🔄 MODIFICADO: Función async para eliminar del equipo
+async function removeFromTeam(name){
   if(!confirm(`Quitar ${name} del equipo?`)) return;
-  let players = getPlayers();
-  const currentPlayersName = getCurrentPlayerName();
-  const playerIndex = players.findIndex(p => p.name === currentPlayersName);
-
-  if (playerIndex === -1) {
-    alert('Error: No se encontró al jugador actual en la base de datos.');
+  
+  const player = await getCurrentPlayerAsync();
+  if (!player) {
+    alert('Error: No se encontró al jugador actual.');
     clearSession();
     updateUIAfterLogin();
     go('team');
     return;
   }
 
-  players[playerIndex].team = players[playerIndex].team.filter(x => x !== name);
-  savePlayers(players);
+  player.team = player.team.filter(x => x !== name);
+  await savePlayerToDB(player);
   updateUIAfterLogin();
   showMyTeam();
 }
@@ -880,20 +953,16 @@ function selectPoke(name, element){
   selectedPokeName = name;
 }
 
-function addSelectedToTeam(){
-  const player = getCurrentPlayer();
+// 🔄 MODIFICADO: Función async para añadir al equipo
+async function addSelectedToTeam(){
+  const player = await getCurrentPlayerAsync();
   if(!player){ alert('Inicia sesión'); return; }
   if(!selectedPokeName) { alert('Selecciona un Pokémon (clic en la lista)'); return; }
   if(player.team.length >= 6) { alert('Equipo lleno (6 Pokémon máximo)'); return; }
   if(player.team.includes(selectedPokeName)) { alert('Ese Pokémon ya está en tu equipo'); return; }
 
-  let players = getPlayers();
-  const playerIndex = players.findIndex(p => p.name === player.name);
-
-  if (playerIndex === -1) { alert('Error: jugador no encontrado en la lista global.'); return; }
-
-  players[playerIndex].team.push(selectedPokeName);
-  savePlayers(players);
+  player.team.push(selectedPokeName);
+  await savePlayerToDB(player);
 
   alert(`${selectedPokeName} añadido a tu equipo`);
   updateUIAfterLogin();
@@ -903,7 +972,7 @@ function addSelectedToTeam(){
 }
 
 /* ---------------------------
-   TIENDA / COMODINES
+   TIENDA / COMODINES - 🔄 MODIFICADO PARA ASYNC
    --------------------------- */
 document.querySelectorAll('#page-shop button[data-item-name]').forEach(btn=>{
   btn.addEventListener('click', ()=> {
@@ -913,29 +982,23 @@ document.querySelectorAll('#page-shop button[data-item-name]').forEach(btn=>{
   });
 });
 
-function buyComodin(itemName, price){
-  const player = getCurrentPlayer();
+async function buyComodin(itemName, price){
+  const player = await getCurrentPlayerAsync();
   if(!player){ alert('Inicia sesión'); return; }
   if(player.coins < price){ alert(`No tienes suficientes Pokécoins (necesitas ${price})`); return; }
 
-  let players = getPlayers();
-  const playerIndex = players.findIndex(p => p.name === player.name);
-
-  if (playerIndex === -1) { alert('Error: jugador no encontrado en la lista global.'); return; }
-
-  if (!players[playerIndex].items) players[playerIndex].items = {};
-
-  players[playerIndex].items[itemName] = (players[playerIndex].items[itemName] || 0) + 1;
-  players[playerIndex].coins -= price;
-  savePlayers(players);
-
+  if (!player.items) player.items = {};
+  player.items[itemName] = (player.items[itemName] || 0) + 1;
+  player.coins -= price;
+  
+  await savePlayerToDB(player);
   alert(`${itemName} añadido a tus comodines`);
   updateUIAfterLogin();
   renderMyItems();
 }
 
-function renderMyItems(){
-  const player = getCurrentPlayer();
+async function renderMyItems(){
+  const player = await getCurrentPlayerAsync();
   const cont = document.getElementById('myItemsContainer');
   if(!player){ cont.innerHTML = 'Inicia sesión para ver tus comodines'; return; }
 
@@ -964,22 +1027,20 @@ function renderMyItems(){
   });
 }
 
-function useComodin(itemName) {
-  const player = getCurrentPlayer();
+// 🔄 MODIFICADO: Función async para usar comodines
+async function useComodin(itemName) {
+  const player = await getCurrentPlayerAsync();
   if (!player) { alert('Inicia sesión para usar comodines.'); return; }
   if (!player.items[itemName] || player.items[itemName] <= 0) { alert('No tienes este comodín.'); return; }
 
   if (!confirm(`¿Estás seguro de que quieres usar "${itemName}"?`)) return;
 
-  let players = getPlayers();
-  const playerIndex = players.findIndex(p => p.name === player.name);
-
-  if (playerIndex === -1) { alert('Error: jugador actual no encontrado.'); return; }
-
-  players[playerIndex].items[itemName]--;
-
+  player.items[itemName]--;
   let message = `Has usado "${itemName}".`;
   let actionCancelled = false;
+  
+  // Obtener todos los jugadores para las acciones que los necesitan
+  const allPlayers = await getAllPlayersFromDB();
 
   switch (itemName) {
     case 'Revivir Pokémon':
@@ -990,21 +1051,26 @@ function useComodin(itemName) {
         message = 'Has usado Revivir Pokémon (sin objetivo específico).';
       }
       break;
+      
     case 'Robo de Monedas':
       var targetNameSteal = prompt('Ingresa el nombre exacto del jugador a robar monedas:');
       if (!targetNameSteal) { actionCancelled = true; break; }
 
-      var victimStealIndex = players.findIndex(p => p.name.toLowerCase() === targetNameSteal.toLowerCase());
-      if (victimStealIndex === -1 || players[victimStealIndex].name === player.name) {
+      var victimSteal = allPlayers.find(p => p.name.toLowerCase() === targetNameSteal.toLowerCase());
+      if (!victimSteal || victimSteal.name === player.name) {
         alert('Objetivo inválido o no encontrado.');
         actionCancelled = true;
         break;
       }
-      var stolenCoins = Math.floor(players[victimStealIndex].coins * 0.10);
-      players[victimStealIndex].coins = Math.max(0, players[victimStealIndex].coins - stolenCoins);
-      players[playerIndex].coins += stolenCoins;
-      message = `¡Has robado ${stolenCoins} Pokécoins a ${escapeHtml(players[victimStealIndex].name)}!`;
+      var stolenCoins = Math.floor(victimSteal.coins * 0.10);
+      victimSteal.coins = Math.max(0, victimSteal.coins - stolenCoins);
+      player.coins += stolenCoins;
+      
+      // Guardar ambos jugadores
+      await savePlayerToDB(victimSteal);
+      message = `¡Has robado ${stolenCoins} Pokécoins a ${escapeHtml(victimSteal.name)}!`;
       break;
+      
     case 'Tótem Inmortalidad':
       const pokeToImmortalize = prompt('¿Qué Pokémon de tu equipo quieres proteger con el Tótem? (Este juego no tiene un sistema de daño, solo consume el comodín)');
       if (pokeToImmortalize) {
@@ -1013,31 +1079,35 @@ function useComodin(itemName) {
         message = 'Has usado Tótem de Inmortalidad (sin objetivo específico).';
       }
       break;
+      
     case 'Matar Pokémon Enemigo':
       var targetNameKill = prompt('Ingresa el nombre exacto del jugador objetivo:');
-
       if (!targetNameKill) { actionCancelled = true; break; }
 
-      var victimKillIndex = players.findIndex(p => p.name.toLowerCase() === targetNameKill.toLowerCase());
-      if (victimKillIndex === -1 || players[victimKillIndex].name === player.name) {
+      var victimKill = allPlayers.find(p => p.name.toLowerCase() === targetNameKill.toLowerCase());
+      if (!victimKill || victimKill.name === player.name) {
         alert('Objetivo inválido o no encontrado.');
         actionCancelled = true;
         break;
       }
-      if (players[victimKillIndex].team.length === 0) {
+      if (victimKill.team.length === 0) {
         alert('El jugador objetivo no tiene Pokémon en su equipo.');
         actionCancelled = true;
         break;
       }
-      var pokeToKill = prompt(`¿Qué Pokémon quieres eliminar del equipo de ${escapeHtml(players[victimKillIndex].name)}? (nombre exacto)`);
-      if (!pokeToKill || !players[victimKillIndex].team.includes(pokeToKill)) {
+      var pokeToKill = prompt(`¿Qué Pokémon quieres eliminar del equipo de ${escapeHtml(victimKill.name)}? (nombre exacto)`);
+      if (!pokeToKill || !victimKill.team.includes(pokeToKill)) {
         alert('Pokémon no encontrado en el equipo del objetivo o nombre incorrecto.');
         actionCancelled = true;
         break;
       }
-      players[victimKillIndex].team = players[victimKillIndex].team.filter(p => p !== pokeToKill);
-      message = `¡Has eliminado a ${escapeHtml(pokeToKill)} del equipo de ${escapeHtml(players[victimKillIndex].name)}!`;
+      victimKill.team = victimKill.team.filter(p => p !== pokeToKill);
+      
+      // Guardar víctima
+      await savePlayerToDB(victimKill);
+      message = `¡Has eliminado a ${escapeHtml(pokeToKill)} del equipo de ${escapeHtml(victimKill.name)}!`;
       break;
+      
     default:
       alert('Comodín desconocido o sin efecto implementado.');
       actionCancelled = true;
@@ -1045,31 +1115,29 @@ function useComodin(itemName) {
   }
 
   if (actionCancelled) {
-    players[playerIndex].items[itemName]++;
+    player.items[itemName]++;
     message = 'Uso del comodín cancelado o fallido.';
   } else {
-    if (players[playerIndex].items[itemName] <= 0) {
-      delete players[playerIndex].items[itemName];
+    if (player.items[itemName] <= 0) {
+      delete player.items[itemName];
     }
   }
 
-  savePlayers(players);
+  await savePlayerToDB(player);
   alert(message);
   updateUIAfterLogin();
   renderMyItems();
   if (!actionCancelled && (itemName === 'Robo de Monedas' || itemName === 'Matar Pokémon Enemigo')) {
     renderRanking();
-    if (getCurrentPlayerName().toLowerCase() === targetNameSteal?.toLowerCase() || getCurrentPlayerName().toLowerCase() === targetNameKill?.toLowerCase()) {
-        showMyTeam();
-    }
+    showMyTeam();
   }
 }
 
 /* ---------------------------
-   RANKING
+   RANKING - 🔄 MODIFICADO PARA ASYNC
    --------------------------- */
-function renderRanking(){
-  const players = [...getPlayers()].sort((a,b)=>b.coins - a.coins);
+async function renderRanking(){
+  const players = await getAllPlayersFromDB();
   const tbody = document.getElementById('rankBody');
   tbody.innerHTML = '';
   players.forEach((p,i)=>{
@@ -1092,8 +1160,9 @@ function renderRanking(){
   });
 }
 
-function showOtherPlayerTeam(playerName) {
-  const player = getPlayers().find(p => p.name === playerName);
+async function showOtherPlayerTeam(playerName) {
+  const players = await getAllPlayersFromDB();
+  const player = players.find(p => p.name === playerName);
   if (!player) { alert('Jugador no encontrado.'); return; }
 
   const detailDiv = document.getElementById('otherPlayerDetail');
@@ -1121,9 +1190,8 @@ function showOtherPlayerTeam(playerName) {
 }
 
 /* ---------------------------
-   GYM MEDALLAS
+   GYM MEDALLAS - 🔄 MODIFICADO PARA ASYNC
    --------------------------- */
-
 function getAllGymMedals(gymMedalsObj){
   const all = [];
   for(const region in gymMedalsObj){
@@ -1134,9 +1202,9 @@ function getAllGymMedals(gymMedalsObj){
   return all;
 }
 
-function renderGymMedals(){
+async function renderGymMedals(){
   const container = document.getElementById('gymContainer');
-  const player = getCurrentPlayer();
+  const player = await getCurrentPlayerAsync();
   const playerGymMedals = player ? player.gymMedals : {};
 
   container.innerHTML = '';
@@ -1177,8 +1245,8 @@ function renderGymMedals(){
   });
 }
 
-function challengeGym(region, medalName, price){
-  const player = getCurrentPlayer();
+async function challengeGym(region, medalName, price){
+  const player = await getCurrentPlayerAsync();
   if(!player){
     alert('Inicia sesión para desafiar un Gym.');
     return;
@@ -1193,36 +1261,31 @@ function challengeGym(region, medalName, price){
     return;
   }
 
-  let players = getPlayers();
-  const playerIndex = players.findIndex(p => p.name === player.name);
-
-  if (playerIndex === -1) { alert('Error: jugador no encontrado.'); return; }
-
-  // Inicializar array de medallas de Gym para esta región si no existe
-  if (!players[playerIndex].gymMedals[region]) {
-    players[playerIndex].gymMedals[region] = [];
+  // Inicializar arrays si no existen
+  if (!player.gymMedals[region]) {
+    player.gymMedals[region] = [];
   }
 
   // Verificar si ya tiene la medalla
-  if (players[playerIndex].gymMedals[region].includes(medalName)) {
+  if (player.gymMedals[region].includes(medalName)) {
     alert(`Ya tienes esta medalla.`);
     return;
   }
 
   // Dar medalla
-  players[playerIndex].gymMedals[region].push(medalName);
-  players[playerIndex].coins -= price;
-  players[playerIndex].medals.push(medalName); // También aparece en "Medallas Generales"
+  player.gymMedals[region].push(medalName);
+  player.coins -= price;
+  player.medals.push(medalName);
 
-  savePlayers(players);
+  await savePlayerToDB(player);
   alert(`¡Felicidades! Has ganado la medalla "${medalName}" de ${region}.`);
   updateUIAfterLogin();
-  renderGymMedals(); // Refrescar vista
-  showMyTeam(); // Refrescar equipo para mostrar la medalla
+  renderGymMedals();
+  showMyTeam();
 }
 
 /* ---------------------------
-   ADMIN PANEL (dar monedas/items/medallas)
+   ADMIN PANEL - 🔄 MODIFICADO PARA ASYNC
    --------------------------- */
 document.getElementById('adminOpenBtn').addEventListener('click', openAdmin);
 document.getElementById('adminCloseBtn').addEventListener('click', closeAdmin);
@@ -1240,88 +1303,90 @@ function openAdmin(){
 }
 function closeAdmin(){ document.getElementById('adminPanel').style.display = 'none'; }
 
-function adminGiveCoins(){
+async function adminGiveCoins(){
   const name = document.getElementById('adminPlayerSelect').value;
   const delta = Number(document.getElementById('adminCoins').value);
   if(!name || isNaN(delta)) return alert('Selecciona jugador y cantidad válida');
 
-  const players = getPlayers();
-  const playerIndex = players.findIndex(p => p.name === name);
-  if(playerIndex === -1) return alert('Jugador no encontrado');
+  const players = await getAllPlayersFromDB();
+  const player = players.find(p => p.name === name);
+  if(!player) return alert('Jugador no encontrado');
 
-  players[playerIndex].coins = Math.max(0, players[playerIndex].coins + delta);
-  savePlayers(players);
-  alert(`Monedas actualizadas: ${players[playerIndex].name} → ${players[playerIndex].coins}`);
+  player.coins = Math.max(0, player.coins + delta);
+  await savePlayerToDB(player);
+  alert(`Monedas actualizadas: ${player.name} → ${player.coins}`);
   updateUIAfterLogin();
   populatePlayerDatalist();
   renderRanking();
 }
 
-function adminGiveItem(){
+async function adminGiveItem(){
   const name = document.getElementById('adminPlayerSelect').value;
   const item = document.getElementById('adminItem').value;
   const qty = Math.max(1, Number(document.getElementById('adminItemQty').value || 1));
   if(!name || !item) return alert('Selecciona jugador e ítem');
 
-  const players = getPlayers();
-  const playerIndex = players.findIndex(p => p.name === name);
-  if(playerIndex === -1) return alert('Jugador no encontrado');
+  const players = await getAllPlayersFromDB();
+  const player = players.find(p => p.name === name);
+  if(!player) return alert('Jugador no encontrado');
 
-  if (!players[playerIndex].items) players[playerIndex].items = {};
-
-  players[playerIndex].items[item] = (players[playerIndex].items[item] || 0) + qty;
-  savePlayers(players);
-  alert(`${qty}x ${item} dado(s) a ${players[playerIndex].name}`);
+  if (!player.items) player.items = {};
+  player.items[item] = (player.items[item] || 0) + qty;
+  
+  await savePlayerToDB(player);
+  alert(`${qty}x ${item} dado(s) a ${player.name}`);
   populatePlayerDatalist();
   if (getCurrentPlayerName() === name) renderMyItems();
 }
 
-function adminGiveMedal(){
+async function adminGiveMedal(){
   const name = document.getElementById('adminPlayerSelect').value;
   const medalName = document.getElementById('adminMedal').value.trim();
   if(!name || !medalName) return alert('Selecciona jugador y nombre de medalla');
 
-  const players = getPlayers();
-  const playerIndex = players.findIndex(p => p.name === name);
-  if(playerIndex === -1) return alert('Jugador no encontrado');
+  const players = await getAllPlayersFromDB();
+  const player = players.find(p => p.name === name);
+  if(!player) return alert('Jugador no encontrado');
 
-  if (!players[playerIndex].medals) players[playerIndex].medals = [];
+  if (!player.medals) player.medals = [];
 
-  if (players[playerIndex].medals.includes(medalName)) {
-    alert(`${players[playerIndex].name} ya tiene la medalla "${medalName}".`);
+  if (player.medals.includes(medalName)) {
+    alert(`${player.name} ya tiene la medalla "${medalName}".`);
     return;
   }
-  players[playerIndex].medals.push(medalName);
-  savePlayers(players);
-  alert(`Medalla "${medalName}" dada a ${players[playerIndex].name}`);
+  player.medals.push(medalName);
+  
+  await savePlayerToDB(player);
+  alert(`Medalla "${medalName}" dada a ${player.name}`);
   populatePlayerDatalist();
   if (getCurrentPlayerName() === name) showMyTeam();
   document.getElementById('adminMedal').value = '';
 }
 
-function adminGiveGymMedal(){
+async function adminGiveGymMedal(){
   const name = document.getElementById('adminPlayerSelect').value;
   const medalName = document.getElementById('adminGymMedal').value.trim();
   const region = document.getElementById('adminGymRegion').value;
 
   if(!name || !medalName || !region) return alert('Selecciona jugador, medalla y región');
 
-  const players = getPlayers();
-  const playerIndex = players.findIndex(p => p.name === name);
-  if(playerIndex === -1) return alert('Jugador no encontrado');
+  const players = await getAllPlayersFromDB();
+  const player = players.find(p => p.name === name);
+  if(!player) return alert('Jugador no encontrado');
 
-  if (!players[playerIndex].gymMedals) players[playerIndex].gymMedals = {};
-  if (!players[playerIndex].gymMedals[region]) players[playerIndex].gymMedals[region] = [];
+  if (!player.gymMedals) player.gymMedals = {};
+  if (!player.gymMedals[region]) player.gymMedals[region] = [];
 
-  if (players[playerIndex].gymMedals[region].includes(medalName)) {
-    alert(`${players[playerIndex].name} ya tiene la medalla "${medalName}" de ${region}.`);
+  if (player.gymMedals[region].includes(medalName)) {
+    alert(`${player.name} ya tiene la medalla "${medalName}" de ${region}.`);
     return;
   }
 
-  players[playerIndex].gymMedals[region].push(medalName);
-  players[playerIndex].medals.push(medalName); // También lo muestra en medallas generales
-  savePlayers(players);
-  alert(`Medalla "${medalName}" de ${region} dada a ${players[playerIndex].name}`);
+  player.gymMedals[region].push(medalName);
+  player.medals.push(medalName);
+  
+  await savePlayerToDB(player);
+  alert(`Medalla "${medalName}" de ${region} dada a ${player.name}`);
   populatePlayerDatalist();
   if (getCurrentPlayerName() === name) {
     renderGymMedals();
@@ -1331,7 +1396,7 @@ function adminGiveGymMedal(){
   document.getElementById('adminGymRegion').value = '';
 }
 
-function adminDeletePlayer(){
+async function adminDeletePlayer(){
   const name = document.getElementById('adminPlayerSelect').value;
   if(!name) return alert('Selecciona un jugador para eliminar');
 
@@ -1339,13 +1404,7 @@ function adminDeletePlayer(){
     return;
   }
 
-  let players = getPlayers();
-  const playerIndex = players.findIndex(p => p.name === name);
-  if(playerIndex === -1) return alert('Jugador no encontrado');
-
-  players.splice(playerIndex, 1);
-  savePlayers(players);
-
+  await deletePlayerFromDB(name);
   alert(`Jugador "${name}" eliminado permanentemente.`);
   populatePlayerDatalist();
   updateUIAfterLogin();
@@ -1367,7 +1426,7 @@ function renderPokedex(){
 
   filtered.forEach(name => {
     const id = getPokedexId(name);
-    const imgSrc = getPokemonImage(name); // Usa arte oficial
+    const imgSrc = getPokemonImage(name);
     const card = document.createElement('div');
     card.className = 'pokedex-card';
     card.innerHTML = `
@@ -1428,7 +1487,7 @@ function escapeHtml(s){
 }
 
 /* ---------------------------
-   INIT
+   INIT - 🔄 MODIFICADO PARA ASYNC
    --------------------------- */
 window.addEventListener('load', async () => {
   filteredPokemon = [...ALL_POKEMON];
@@ -1440,9 +1499,3 @@ window.addEventListener('load', async () => {
 </script>
 </body>
 </html>
-
-
-
-
-
-
