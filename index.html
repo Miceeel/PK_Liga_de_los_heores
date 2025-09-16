@@ -341,7 +341,7 @@ let supabase = null;
 if (typeof window.supabase !== 'undefined') {
     // REEMPLAZA ESTOS VALORES CON TUS CREDENCIALES DE SUPABASE
     const SUPABASE_URL = 'https://xcmkidycfpprozuibmsu.supabase.co'; // <- CAMBIAR
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjbWtpZHljZnBwcm96dWlibXN1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Nzk5ODQ3MCwiZXhwIjoyMDczNTc0NDcwfQ.AviK2VFIWftNJtMx7IE-UIzR_jHiwcknGFvN0dhnOLg'; // <- CAMBIAR
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjbWtpZHljZnBwcm96dWlibXN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5OTg0NzAsImV4cCI6MjA3MzU3NDQ3MH0.sF0lDu0z14aUa7d7hssJ4MEwKj1V_n8Iyi0mdm2sHuQ'; // <- CAMBIAR
     
     try {
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -1440,6 +1440,7 @@ window.addEventListener('load', async () => {
 </script>
 </body>
 </html>
+
 
 
 
