@@ -341,7 +341,7 @@ input,select,textarea{width:100%;padding:9px;border-radius:8px;border:1px solid 
 const SUPABASE_URL = 'https://xcmkidycfpprozuibmsu.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjbWtpZHljZnBwcm96dWlibXN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5OTg0NzAsImV4cCI6MjA3MzU3NDQ3MH0.sF0lDu0z14aUa7d7hssJ4MEwKj1V_n8Iyi0mdm2sHuQ' ;
 
-const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FIN CONFIGURACIÓN DE SUPABASE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 // =========================================================================================================================
 
@@ -1588,4 +1588,5 @@ window.addEventListener('load', async () => { // Marcado como async
 </body>
 
 </html>
+
 
